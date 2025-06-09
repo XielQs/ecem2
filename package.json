@@ -1,0 +1,20 @@
+{
+  "name": "ecem2",
+  "version": "0.1.0",
+  "description": "Simple programming language compiler written in TypeScript + Bun",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "bun .",
+    "test": "bun test",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [],
+  "author": "XielQ",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "^1.2.15",
+    "@types/node": "^22.15.30",
+    "typescript": "^5.8.3"
+  }
+}

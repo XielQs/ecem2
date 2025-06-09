@@ -1,0 +1,51 @@
+import { FILE_EXTENSION } from './constants.ts'
+import type { Token } from './token.ts'
+import fs from 'node:fs'
+
+export function readFile(file_path: string, retry: boolean): string {
+  try {
+    return fs.readFileSync(file_path, 'utf8')
+  } catch (error) {
+    if (retry && !file_path.endsWith(FILE_EXTENSION)) {
+      return readFile(file_path + FILE_EXTENSION, false)
+    }
+    console.error(`Error: Could not read file ${file_path}`)
+    process.exit(1)
+  }
+}
+
+export function isDigit(char: string): boolean {
+  return char >= '0' && char <= '9'
+}
+
+export function isAlpha(char: string): boolean {
+  return (
+    (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === '_'
+  )
+}
+
+export function handleCompilerError(
+  message: string,
+  token: Token,
+  source: string,
+  file_name: string,
+  custom_mark: { spaces?: number; carets?: number } = {}
+): never {
+  const lines = source.split('\n')
+
+  const line = lines[token.line]
+  const caretCount = token.literal.length || 1
+  const spaces = ' '.repeat(custom_mark.spaces ?? token.column - 1)
+  const carets = '^'.repeat(custom_mark.carets ?? caretCount)
+
+  process.stderr.write(
+    `${file_name}:${token.line + 1}${
+      token.column > 0 ? ':' + token.column : ''
+    }\n`
+  )
+  process.stderr.write(line + '\n')
+  process.stderr.write(spaces + carets + '\n')
+  process.stderr.write(`[panic]: ${message}\n`)
+
+  process.exit(1)
+}
