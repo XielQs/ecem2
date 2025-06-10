@@ -32,7 +32,7 @@ export default class Parser {
       this.nextToken()
     } else {
       handleError(
-        `Unexpected token '${this.peek.type}', ${type} expected`,
+        `Unexpected token ${this.peek.type}, ${type} expected`,
         {
           column: this.peek.column,
           line: this.peek.line,
@@ -133,7 +133,7 @@ export default class Parser {
 
     if (this.identifiers[name.value]) {
       handleError(
-        `Identifier '${name.value}' has already been declared`,
+        `Identifier ${name.value} has already been declared`,
         {
           column: 0,
           line: name.token.line,
