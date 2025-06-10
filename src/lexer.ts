@@ -53,12 +53,7 @@ export default class Lexer {
   }
 
   public skipWhitespace() {
-    while (
-      this.ch == ' ' ||
-      this.ch == '\t' ||
-      this.ch == '\n' ||
-      this.ch == '\r'
-    ) {
+    while (this.ch == ' ' || this.ch == '\t' || this.ch == '\n' || this.ch == '\r') {
       this.readChar()
     }
   }

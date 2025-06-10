@@ -1,10 +1,4 @@
-import type {
-  Identifier,
-  LetStatement,
-  Literal,
-  Program,
-  Statement
-} from './ast.ts'
+import type { Identifier, LetStatement, Literal, Program, Statement } from './ast.ts'
 import { type Token, TokenType } from './token.ts'
 import { handleCompilerError } from './common.ts'
 import Lexer from './lexer.ts'
@@ -133,8 +127,7 @@ export default class Parser {
         this.lexer.source_code,
         this.lexer.file_name,
         {
-          carets:
-            this.lexer.source_code.split('\n')[name.token.line - 1].length,
+          carets: this.lexer.source_code.split('\n')[name.token.line - 1].length,
           spaces: 0
         }
       )

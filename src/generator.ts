@@ -33,7 +33,7 @@ export default class CodeGenerator {
     }
   }
 
-  visitProgram(node: Program) {
+  private visitProgram(node: Program) {
     this.out += '#include <stdio.h>\n'
     this.out += '#include <stdbool.h>\n\n'
     this.out += 'int main() {\n'
@@ -45,7 +45,7 @@ export default class CodeGenerator {
     this.out += '}\n'
   }
 
-  visitLetStatement(node: LetStatement) {
+  private visitLetStatement(node: LetStatement) {
     switch (node.value.type) {
       case 'IntegerLiteral':
         this.out += `int `
@@ -63,19 +63,19 @@ export default class CodeGenerator {
     this.out += ';\n'
   }
 
-  visitIntegerLiteral(node: IntegerLiteral) {
+  private visitIntegerLiteral(node: IntegerLiteral) {
     this.out += node.value
   }
 
-  visitIdentifier(node: Identifier) {
+  private visitIdentifier(node: Identifier) {
     this.out += node.value
   }
 
-  visitStringLiteral(node: StringLiteral) {
+  private visitStringLiteral(node: StringLiteral) {
     this.out += `"${node.value}"`
   }
 
-  visitBooleanLiteral(node: BooleanLiteral) {
+  private visitBooleanLiteral(node: BooleanLiteral) {
     this.out += node.value ? 'true' : 'false'
   }
 }

@@ -41,9 +41,8 @@ export enum TokenType {
 
 export function tokenTypeToString(type: TokenType) {
   return (
-    Object.keys(TokenType).find(
-      key => TokenType[key as keyof typeof TokenType] === type
-    ) || 'UNKNOWN'
+    Object.keys(TokenType).find(key => TokenType[key as keyof typeof TokenType] === type) ||
+    'UNKNOWN'
   )
 }
 

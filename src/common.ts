@@ -19,9 +19,7 @@ export function isDigit(char: string): boolean {
 }
 
 export function isAlpha(char: string): boolean {
-  return (
-    (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === '_'
-  )
+  return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === '_'
 }
 
 export function handleCompilerError(
@@ -39,9 +37,7 @@ export function handleCompilerError(
   const carets = '^'.repeat(custom_mark.carets ?? caretCount)
 
   process.stderr.write(
-    `${file_name}:${token.line + 1}${
-      token.column > 0 ? ':' + token.column : ''
-    }\n`
+    `${file_name}:${token.line + 1}${token.column > 0 ? ':' + token.column : ''}\n`
   )
   process.stderr.write(line + '\n')
   process.stderr.write(spaces + carets + '\n')

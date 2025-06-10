@@ -2,22 +2,23 @@ import { VERSION } from './constants.ts'
 
 export default class ArgumentParser {
   private readonly args: string[]
-  public parsed_arguments: Record<string, string | string[]> = {}
+  public parsed_arguments: Record<string, string | boolean | string[]> = {}
 
   constructor(args: string[]) {
     this.args = args
   }
 
   public showHelp(): never {
-    console.log('Usage: <file> [-o <file>] [-h|--help] [-v|--version]')
+    console.log('Usage: <file> [-o <file>] [--no-parse] [-h|--help] [-v|--version]')
     console.log('Options:')
     console.log('  -o, --out <file>   Specify output file')
+    console.log('  --no-parse         Skip parsing and only tokenize the input file')
     console.log('  -h, --help         Show this help message')
     console.log('  -v, --version      Show compiler version')
     process.exit(0)
   }
 
-  public getArgument(name: string): string | string[] | undefined {
+  public getArgument(name: string): string | boolean | string[] | undefined {
     return this.parsed_arguments[name]
   }
 
@@ -39,6 +40,9 @@ export default class ArgumentParser {
           this.parsed_arguments.output = nextArg
           this.args.splice(this.args.indexOf(command) + 1, 1) // Remove nextArg from args
           break
+        case '--no-parse':
+          this.parsed_arguments.no_parse = true
+          break
         case '-h':
         case '--help':
           this.showHelp()
@@ -56,11 +60,6 @@ export default class ArgumentParser {
           console.error(`Unknown argument: ${command}`)
           process.exit(1)
       }
-    }
-
-    if (this.parsed_arguments.files && this.parsed_arguments.files.length > 1) {
-      console.error('[panic]: Only one file can be processed at a time')
-      process.exit(1)
     }
   }
 }
