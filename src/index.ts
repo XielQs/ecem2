@@ -1,10 +1,10 @@
 import ArgumentParser from './argument-parser.ts'
-import CodeGenerator from './generator.ts'
+import CodeGenerator from './generator/index.ts'
+import type { Token } from './parser/token.ts'
 import { writeFileSync } from 'node:fs'
-import type { Token } from './token.ts'
 import { readFile } from './common.ts'
+import Parser from './parser/index.ts'
 import { resolve } from 'node:path'
-import Parser from './parser.ts'
 import Lexer from './lexer.ts'
 
 const args = new ArgumentParser(process.argv.slice(2))

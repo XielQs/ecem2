@@ -1,5 +1,5 @@
-import { handleCompilerError, isAlpha, isDigit } from './common.ts'
-import { type Token, TokenType } from './token.ts'
+import { handleError, isAlpha, isDigit } from './common.ts'
+import { type Token, TokenType } from './parser/token.ts'
 
 export const KEYWORDS: Record<string, TokenType> = {
   ft: TokenType.FUNCTION,
@@ -86,16 +86,17 @@ export default class Lexer {
       this.readChar() // move past the closing quote
       return str
     } else {
-      handleCompilerError(
+      handleError(
         'Unterminated string literal',
         {
           type: TokenType.ILLEGAL,
           literal: this.source_code.split('\n')[start_line].slice(start - 1),
           line: start_line,
-          column: start - 1
+          column: start
         },
         this.source_code,
-        this.file_name
+        this.file_name,
+        'error'
       )
     }
   }
@@ -232,7 +233,18 @@ export default class Lexer {
           token.literal = this.readNumber()
           return token
         } else {
-          // unexpected character, theated as illegal
+          handleError(
+            `Unexpected token ${this.ch}`,
+            {
+              type: TokenType.ILLEGAL,
+              literal: this.ch,
+              line: this.line,
+              column: this.column
+            },
+            this.source_code,
+            this.file_name,
+            'error'
+          )
         }
         break
     }

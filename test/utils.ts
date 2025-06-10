@@ -1,7 +1,7 @@
 import { type Mock, spyOn, expect } from 'bun:test'
 
-let stderrSpy: Mock<typeof process.stderr.write> | null = null
-let exitSpy: Mock<typeof process.exit> | null = null
+export let stderrSpy: Mock<typeof process.stderr.write> | null = null
+export let exitSpy: Mock<typeof process.exit> | null = null
 
 function spy() {
   if (!stderrSpy) {
@@ -14,12 +14,12 @@ function spy() {
   }
 }
 
-function clearSpies() {
+export function clearSpies() {
   stderrSpy?.mockClear()
   exitSpy?.mockClear()
 }
 
-function expectPanic(actual: () => void, expectedError: string) {
+export function setupExpectations(actual: () => void) {
   spy()
   clearSpies()
 
@@ -27,14 +27,15 @@ function expectPanic(actual: () => void, expectedError: string) {
   expect(stderrSpy).toHaveBeenCalled()
   expect(exitSpy).toHaveBeenCalledWith(1)
 
-  const errorMessages = stderrSpy!.mock.calls
-    .map(call => call[0] as string)
-    .filter(msg => msg.includes('[panic]:'))
+  return stderrSpy!.mock.calls.map(call => call[0].toString())
+}
+
+export function expectPanic(actual: () => void, expectedError: string) {
+  const errorMessages = setupExpectations(actual)
+    .filter(msg => msg.includes('[panic]:') || msg.includes('[error]:'))
     .join('\n')
 
-  expect(errorMessages).toContain(`[panic]: ${expectedError}`)
+  expect(errorMessages).toContain(expectedError)
 
   clearSpies()
 }
-
-export { stderrSpy, exitSpy, expectPanic }

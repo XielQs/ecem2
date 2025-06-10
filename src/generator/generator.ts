@@ -6,7 +6,8 @@ import type {
   LetStatement,
   Program,
   StringLiteral
-} from './ast.ts'
+} from '../parser/ast.ts'
+import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/parseHelpers.ts'
 
 export default class CodeGenerator {
   private out = ''
@@ -16,8 +17,19 @@ export default class CodeGenerator {
     return this.out
   }
 
-  private visit(node: ASTNode) {
-    const typeMap: Record<string, (node: any) => void> = {
+  private visit(node: ASTNode): void {
+    type TypeMap = {
+      Program: Program
+      Identifier: Identifier
+      IntegerLiteral: IntegerLiteral
+      StringLiteral: StringLiteral
+      BooleanLiteral: BooleanLiteral
+      LetStatement: LetStatement
+    }
+
+    const typeMap: {
+      [K in keyof TypeMap]: (node: TypeMap[K]) => void
+    } = {
       Program: this.visitProgram,
       Identifier: this.visitIdentifier,
       IntegerLiteral: this.visitIntegerLiteral,
@@ -25,15 +37,15 @@ export default class CodeGenerator {
       BooleanLiteral: this.visitBooleanLiteral,
       LetStatement: this.visitLetStatement
     }
-    const visitFn = typeMap[node.type]
+    const visitFn = typeMap[node.type] as (node: TypeMap[keyof TypeMap]) => void
     if (visitFn) {
-      visitFn.call(this, node)
+      visitFn.bind(this, node)()
     } else {
       throw new Error(`No visit method for node type: ${node.type}`)
     }
   }
 
-  private visitProgram(node: Program) {
+  private visitProgram(node: Program): void {
     this.out += '#include <stdio.h>\n'
     this.out += '#include <stdbool.h>\n\n'
     this.out += 'int main() {\n'
@@ -45,7 +57,7 @@ export default class CodeGenerator {
     this.out += '}\n'
   }
 
-  private visitLetStatement(node: LetStatement) {
+  private visitLetStatement(node: LetStatement): void {
     switch (node.value.type) {
       case 'IntegerLiteral':
         this.out += `int `
@@ -63,19 +75,19 @@ export default class CodeGenerator {
     this.out += ';\n'
   }
 
-  private visitIntegerLiteral(node: IntegerLiteral) {
-    this.out += node.value
+  private visitIntegerLiteral(node: IntegerLiteral): void {
+    this.out += parseInteger(node)
   }
 
-  private visitIdentifier(node: Identifier) {
-    this.out += node.value
+  private visitIdentifier(node: Identifier): void {
+    this.out += parseIdentifier(node)
   }
 
-  private visitStringLiteral(node: StringLiteral) {
-    this.out += `"${node.value}"`
+  private visitStringLiteral(node: StringLiteral): void {
+    this.out += parseString(node)
   }
 
-  private visitBooleanLiteral(node: BooleanLiteral) {
-    this.out += node.value ? 'true' : 'false'
+  private visitBooleanLiteral(node: BooleanLiteral): void {
+    this.out += parseBoolean(node)
   }
 }

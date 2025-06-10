@@ -1,4 +1,4 @@
-import { type Token, TokenType } from '../src/token.ts'
+import { type Token, TokenType } from '../src/parser/token.ts'
 import { describe, it, expect } from 'bun:test'
 import { expectPanic } from './utils.ts'
 import Lexer from '../src/lexer.ts'

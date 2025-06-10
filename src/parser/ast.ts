@@ -12,12 +12,12 @@ export interface Program {
   body: Statement[]
 }
 
+// ---------------- Literals ----------------
+
 export interface Identifier extends BaseNode {
   type: 'Identifier'
   value: string
 }
-
-// ---------------- Literals ----------------
 
 export interface IntegerLiteral extends BaseNode {
   type: 'IntegerLiteral'
@@ -34,7 +34,7 @@ export interface BooleanLiteral extends BaseNode {
   value: boolean
 }
 
-export type Literal = IntegerLiteral | StringLiteral | BooleanLiteral
+export type Literal = IntegerLiteral | StringLiteral | BooleanLiteral | Identifier
 
 // ---------------- Statements ----------------
 
@@ -42,6 +42,11 @@ export interface LetStatement {
   type: 'LetStatement'
   name: Identifier
   value: Literal
+}
+
+export interface ExpressionStatement {
+  type: 'ExpressionStatement'
+  expression: ASTNode
 }
 
 export type Statement = LetStatement

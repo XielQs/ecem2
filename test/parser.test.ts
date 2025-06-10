@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
+import Parser from '../src/parser/index.ts'
 import { expectPanic } from './utils.ts'
-import Parser from '../src/parser.ts'
 import Lexer from '../src/lexer.ts'
 
 describe('Parser', () => {
@@ -43,10 +43,7 @@ describe('Parser', () => {
   it('throws error on duplicate identifier declaration', () => {
     const code = 'let x = 1\nlet x = 2'
     const parser = new Parser(new Lexer(code, 'test'))
-    expectPanic(
-      () => parser.parseProgram(),
-      "Identifier 'x' has already been declared"
-    )
+    expectPanic(() => parser.parseProgram(), "Identifier 'x' has already been declared")
   })
 
   it('throws error on unexpected token', () => {
@@ -58,10 +55,7 @@ describe('Parser', () => {
   it('throws error on unknown value type', () => {
     const code = 'let x = unknown'
     const parser = new Parser(new Lexer(code, 'test'))
-    expectPanic(
-      () => parser.parseProgram(),
-      "Unexpected value type 'identifier' for identifier 'x'"
-    )
+    expectPanic(() => parser.parseProgram(), 'Unexpected value type identifier for identifier x')
   })
 
   it('parses multiple let statements', () => {

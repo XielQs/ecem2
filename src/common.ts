@@ -1,5 +1,5 @@
 import { FILE_EXTENSION } from './constants.ts'
-import type { Token } from './token.ts'
+import type { Token } from './parser/token.ts'
 import fs from 'node:fs'
 
 export function readFile(file_path: string, retry: boolean): string {
@@ -22,11 +22,12 @@ export function isAlpha(char: string): boolean {
   return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === '_'
 }
 
-export function handleCompilerError(
+export function handleError(
   message: string,
   token: Token,
   source: string,
   file_name: string,
+  type: 'panic' | 'error' = 'panic',
   custom_mark: { spaces?: number; carets?: number } = {}
 ): never {
   const lines = source.split('\n')
@@ -41,7 +42,7 @@ export function handleCompilerError(
   )
   process.stderr.write(line + '\n')
   process.stderr.write(spaces + carets + '\n')
-  process.stderr.write(`[panic]: ${message}\n`)
+  process.stderr.write(`[${type}]: ${message}\n`)
 
   process.exit(1)
 }
