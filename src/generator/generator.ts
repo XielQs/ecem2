@@ -1,7 +1,9 @@
 import type {
   ASTNode,
   BooleanLiteral,
+  Expression,
   Identifier,
+  InfixExpression,
   IntegerLiteral,
   LetStatement,
   Program,
@@ -13,11 +15,11 @@ export default class CodeGenerator {
   private out = ''
 
   public generate(node: ASTNode): string {
-    this.visit(node)
+    this.visit(node as Exclude<ASTNode, { type: 'ExpressionStatement' }>)
     return this.out
   }
 
-  private visit(node: ASTNode): void {
+  private visit(node: Exclude<ASTNode, { type: 'ExpressionStatement' }>): void {
     type TypeMap = {
       Program: Program
       Identifier: Identifier
@@ -25,6 +27,7 @@ export default class CodeGenerator {
       StringLiteral: StringLiteral
       BooleanLiteral: BooleanLiteral
       LetStatement: LetStatement
+      InfixExpression: InfixExpression
     }
 
     const typeMap: {
@@ -35,7 +38,8 @@ export default class CodeGenerator {
       IntegerLiteral: this.visitIntegerLiteral,
       StringLiteral: this.visitStringLiteral,
       BooleanLiteral: this.visitBooleanLiteral,
-      LetStatement: this.visitLetStatement
+      LetStatement: this.visitLetStatement,
+      InfixExpression: this.visitInfixExpression
     }
     const visitFn = typeMap[node.type] as (node: TypeMap[keyof TypeMap]) => void
     if (visitFn) {
@@ -51,24 +55,28 @@ export default class CodeGenerator {
     this.out += 'int main() {\n'
     for (const stmt of node.body) {
       this.out += '    '
-      this.visit(stmt)
+      if (stmt.type !== 'ExpressionStatement') this.visit(stmt)
     }
     this.out += '    return 0;\n'
     this.out += '}\n'
   }
 
-  private visitLetStatement(node: LetStatement): void {
-    switch (node.value.type) {
+  private parseExpressionType(expression: Expression): string {
+    switch (expression.type) {
       case 'IntegerLiteral':
-        this.out += `int `
-        break
+        return 'int'
+      case 'Identifier':
       case 'StringLiteral':
-        this.out += `char* `
-        break
+        return 'char*'
       case 'BooleanLiteral':
-        this.out += `bool `
-        break
+        return 'bool'
+      case 'InfixExpression':
+        return this.parseExpressionType(expression.left)
     }
+  }
+
+  private visitLetStatement(node: LetStatement): void {
+    this.out += this.parseExpressionType(node.value) + ' '
     this.visit(node.name)
     this.out += ' = '
     this.visit(node.value)
@@ -89,5 +97,37 @@ export default class CodeGenerator {
 
   private visitBooleanLiteral(node: BooleanLiteral): void {
     this.out += parseBoolean(node)
+  }
+
+  private concatString(node: InfixExpression): string | null {
+    if (node.operator !== '+') return null
+
+    const collect = (n: ASTNode): string | null => {
+      if (n.type === 'StringLiteral') {
+        return n.value
+      } else if (n.type === 'InfixExpression' && n.operator === '+') {
+        const left = collect(n.left)
+        const right = collect(n.right)
+        return left !== null && right !== null ? left + right : null
+      } else {
+        return null
+      }
+    }
+
+    return collect(node)
+  }
+
+  private visitInfixExpression(node: InfixExpression): void {
+    const concated = this.concatString(node)
+    if (concated !== null) {
+      this.out += `"${concated}"`
+      return
+    }
+
+    this.out += '('
+    this.visit(node.left)
+    this.out += ` ${node.operator} `
+    this.visit(node.right)
+    this.out += ')'
   }
 }

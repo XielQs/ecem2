@@ -1,6 +1,6 @@
 import type { Token } from './token.ts'
 
-export type ASTNode = Program | Statement | Literal | Identifier
+export type ASTNode = Program | Statement | Expression
 
 export interface BaseNode {
   type: string
@@ -38,10 +38,10 @@ export type Literal = IntegerLiteral | StringLiteral | BooleanLiteral | Identifi
 
 // ---------------- Statements ----------------
 
-export interface LetStatement {
+export interface LetStatement<V extends Expression = Expression> {
   type: 'LetStatement'
   name: Identifier
-  value: Literal
+  value: V
 }
 
 export interface ExpressionStatement {
@@ -49,4 +49,16 @@ export interface ExpressionStatement {
   expression: ASTNode
 }
 
-export type Statement = LetStatement
+export type Statement = LetStatement | ExpressionStatement
+
+// ---------------- Expressions ----------------
+
+export interface InfixExpression<L extends Expression = Expression, R extends Expression = L>
+  extends BaseNode {
+  type: 'InfixExpression'
+  left: L
+  operator: string
+  right: R
+}
+
+export type Expression = Literal | InfixExpression

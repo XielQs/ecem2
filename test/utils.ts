@@ -2,8 +2,9 @@ import { type Mock, spyOn, expect } from 'bun:test'
 
 export let stderrSpy: Mock<typeof process.stderr.write> | null = null
 export let exitSpy: Mock<typeof process.exit> | null = null
+export let isMonitored = false
 
-function spy() {
+export function spy() {
   if (!stderrSpy) {
     stderrSpy = spyOn(process.stderr, 'write').mockImplementation(() => true)
   }
@@ -17,11 +18,13 @@ function spy() {
 export function clearSpies() {
   stderrSpy?.mockClear()
   exitSpy?.mockClear()
+  isMonitored = false
 }
 
 export function setupExpectations(actual: () => void) {
   spy()
   clearSpies()
+  isMonitored = true
 
   expect(actual).toThrow('exit')
   expect(stderrSpy).toHaveBeenCalled()

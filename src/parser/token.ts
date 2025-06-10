@@ -1,6 +1,7 @@
 export enum TokenType {
   ILLEGAL = 'illegal',
   END_OF_FILE = 'EOF',
+  NEWLINE = 'newline',
 
   IDENTIFIER = 'identifier',
   INT = 'integer',

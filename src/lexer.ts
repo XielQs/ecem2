@@ -53,7 +53,7 @@ export default class Lexer {
   }
 
   public skipWhitespace() {
-    while (this.ch == ' ' || this.ch == '\t' || this.ch == '\n' || this.ch == '\r') {
+    while (this.ch === ' ' || this.ch === '\t' || this.ch === '\r') {
       this.readChar()
     }
   }
@@ -218,6 +218,10 @@ export default class Lexer {
         token.type = TokenType.END_OF_FILE
         token.literal = ''
         break
+      case '\n':
+        token.type = TokenType.NEWLINE
+        token.literal = '\n'
+        break
       default:
         if (isAlpha(this.ch)) {
           token.literal = this.readIdentifier()
@@ -246,7 +250,6 @@ export default class Lexer {
             'error'
           )
         }
-        break
     }
 
     this.readChar()

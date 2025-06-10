@@ -1,6 +1,30 @@
 import type { BooleanLiteral, Identifier, IntegerLiteral, Literal, StringLiteral } from './ast.ts'
 import { TokenType, type Token } from './token.ts'
 
+export const PRECEDENCE: Record<
+  | TokenType.PLUS
+  | TokenType.MINUS
+  | TokenType.SLASH
+  | TokenType.ASTERISK
+  | TokenType.LPAREN
+  | TokenType.RPAREN,
+  number
+> = {
+  [TokenType.PLUS]: 1,
+  [TokenType.MINUS]: 1,
+  [TokenType.SLASH]: 2,
+  [TokenType.ASTERISK]: 2,
+  [TokenType.LPAREN]: 3,
+  [TokenType.RPAREN]: 3
+}
+
+export function getPrecedence(token: Token): number {
+  if (token.type in PRECEDENCE) {
+    return PRECEDENCE[token.type as keyof typeof PRECEDENCE]
+  }
+  return 0
+}
+
 export function parseTokenAsLiteral(token: Token): Literal['value'] | null {
   switch (token.type) {
     case TokenType.INT:

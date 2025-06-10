@@ -94,6 +94,7 @@ describe('Lexer', () => {
       TokenType.IDENTIFIER,
       TokenType.ASSIGN,
       TokenType.INT,
+      TokenType.NEWLINE,
       TokenType.IDENTIFIER,
       TokenType.END_OF_FILE
     ])

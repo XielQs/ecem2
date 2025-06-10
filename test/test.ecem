@@ -1,1 +1,2 @@
-let x = 5
+let x = "test1 " + "test2" + " test3" 
+let y = 5 

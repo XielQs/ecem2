@@ -1,5 +1,8 @@
 import {
+  getPrecedence,
   parseTokenAsLiteral,
+  type Expression,
+  type ExpressionStatement,
   type Identifier,
   type LetStatement,
   type Literal,
@@ -14,7 +17,7 @@ export default class Parser {
   private readonly lexer: Lexer
   private cur: Token
   private peek: Token
-  public identifiers: Record<string, Literal> = {}
+  public identifiers: Record<string, Expression> = {}
 
   public constructor(lexer: Lexer) {
     this.lexer = lexer
@@ -28,43 +31,53 @@ export default class Parser {
   }
 
   private expectPeek(type: TokenType): void {
+    this.skipNewline()
     if (this.peek.type === type) {
       this.nextToken()
     } else {
-      handleError(
-        `Unexpected token ${this.peek.type}, ${type} expected`,
-        {
-          column: this.peek.column,
-          line: this.peek.line,
-          literal: this.peek.literal,
-          type: this.peek.type
-        },
-        this.lexer.source_code,
-        this.lexer.file_name
-      )
+      this.throwError(this.peek, `Unexpected token ${this.peek.type}, ${type} expected`)
     }
+  }
+
+  private skipNewline(): void {
+    while (this.cur.type === TokenType.NEWLINE) {
+      this.nextToken()
+    }
+  }
+
+  private throwError(token: Token, custom_message?: string): never {
+    handleError(
+      custom_message ||
+        (token.type == TokenType.ILLEGAL
+          ? 'Unexpected illegal token'
+          : `Unexpected token ${token.type}`),
+      {
+        column: token.column,
+        line: token.line,
+        literal: (parseTokenAsLiteral(token) || token.literal).toString(),
+        type: token.type
+      },
+      this.lexer.source_code,
+      this.lexer.file_name
+    )
   }
 
   public parseProgram(): Program {
     const body: Statement[] = []
 
     while (this.cur.type !== TokenType.END_OF_FILE) {
-      if (this.cur.type === TokenType.LET) {
+      if (this.cur.type === TokenType.NEWLINE) {
+        this.nextToken()
+        continue
+      } else if (this.cur.type === TokenType.LET) {
         body.push(this.parseLetStatement())
       } else {
-        handleError(
-          this.cur.type == TokenType.ILLEGAL
-            ? 'Unexpected illegal token'
-            : `Unexpected token ${this.cur.type}`,
-          {
-            column: this.cur.column,
-            line: this.cur.line,
-            literal: (parseTokenAsLiteral(this.cur) || this.cur.literal).toString(),
-            type: this.cur.type
-          },
-          this.lexer.source_code,
-          this.lexer.file_name
-        )
+        const expr = this.parseExpressionStatement()
+        if (expr) {
+          body.push(expr)
+          continue
+        }
+        this.throwError(this.cur)
       }
     }
 
@@ -105,11 +118,9 @@ export default class Parser {
         }
       default:
         if (!identifier) return null as T extends null ? null : never
-        handleError(
-          `Unexpected value type ${token.type} for identifier ${identifier.value}`,
+        this.throwError(
           token,
-          this.lexer.source_code,
-          this.lexer.file_name
+          `Unexpected value type ${token.type} for identifier ${identifier.value}`
         )
     }
   }
@@ -127,7 +138,7 @@ export default class Parser {
 
     this.nextToken()
 
-    const value = this.parseLiteral(this.cur, name)
+    const value = this.parseExpression(0, name)
 
     this.nextToken() // let x = 69
 
@@ -157,5 +168,63 @@ export default class Parser {
       name,
       value
     }
+  }
+
+  private parseExpressionStatement(): ExpressionStatement {
+    const expression = this.parseExpression(0)
+    this.nextToken()
+    return {
+      type: 'ExpressionStatement',
+      expression
+    }
+  }
+
+  private parseExpression(precedence = 0, identifier?: Identifier): Expression {
+    let left = this.parseLiteral(this.cur, identifier || null) as Expression | null
+
+    if (!left) {
+      this.throwError(this.cur, `Unexpected token ${this.cur.type} in expression`)
+    }
+
+    while (
+      this.peek.type !== TokenType.END_OF_FILE &&
+      this.peek.type !== TokenType.NEWLINE &&
+      precedence < getPrecedence(this.peek)
+    ) {
+      const operatorToken = this.peek
+      const operator = operatorToken.literal
+      const opPrecedence = getPrecedence(operatorToken)
+
+      this.nextToken() // consume operator
+      this.nextToken() // move to right expression
+
+      const right = this.parseExpression(opPrecedence)
+
+      // check if right and left are same type
+      const validTypes = ['IntegerLiteral', 'StringLiteral', 'BooleanLiteral']
+
+      const leftNode = (left.type === 'InfixExpression' ? left.right : left) as Identifier
+
+      if (
+        validTypes.includes(leftNode.type) &&
+        validTypes.includes(right.type) &&
+        leftNode.type !== right.type
+      ) {
+        this.throwError(
+          right.token,
+          `Cannot operate on ${leftNode.token.type} and ${right.token.type}`
+        )
+      }
+
+      left = {
+        type: 'InfixExpression',
+        operator,
+        left,
+        right,
+        token: operatorToken
+      }
+    }
+
+    return left
   }
 }
