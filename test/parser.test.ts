@@ -43,13 +43,13 @@ describe('Parser', () => {
   it('throws error on duplicate identifier declaration', () => {
     const code = 'let x = 1\nlet x = 2'
     const parser = new Parser(new Lexer(code, 'test'))
-    expectPanic(() => parser.parseProgram(), "Identifier 'x' has already been declared")
+    expectPanic(() => parser.parseProgram(), 'Identifier x has already been declared')
   })
 
   it('throws error on unexpected token', () => {
     const code = 'let = 5'
     const parser = new Parser(new Lexer(code, 'test'))
-    expectPanic(() => parser.parseProgram(), "Unexpected token '='")
+    expectPanic(() => parser.parseProgram(), 'Unexpected token =')
   })
 
   it('throws error on unknown value type', () => {
