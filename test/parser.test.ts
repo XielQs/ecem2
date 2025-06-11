@@ -64,7 +64,7 @@ describe('Parser', () => {
   it('throws error on unknown value type', () => {
     const code = 'let x = unknown'
     const parser = new Parser(new Lexer(code, 'test'))
-    expectPanic(() => parser.parseProgram(), 'Unexpected value type identifier for identifier x')
+    expectPanic(() => parser.parseProgram(), 'Identifier unknown is not defined')
   })
 
   it('parses multiple let statements', () => {
