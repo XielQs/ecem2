@@ -16,6 +16,7 @@ import type Parser from '../parser/parser.ts'
 export default class CodeGenerator {
   private out = ''
   private readonly parser: Parser
+  private headers: string[] = []
 
   constructor(parser: Parser) {
     this.parser = parser
@@ -23,7 +24,15 @@ export default class CodeGenerator {
 
   public generate(node: ASTNode): string {
     this.visit(node as Exclude<ASTNode, { type: 'ExpressionStatement' }>)
+    this.generateHeaders()
     return this.out
+  }
+
+  private generateHeaders(): void {
+    const headers = this.headers.join('\n#include ')
+    if (headers) {
+      this.out = `#include ${headers}\n\n` + this.out
+    }
   }
 
   private visit(node: Exclude<ASTNode, { type: 'ExpressionStatement' }>): void {
@@ -58,9 +67,11 @@ export default class CodeGenerator {
     }
   }
 
+  private addHeader(header: string): void {
+    if (!this.headers.includes(header)) this.headers.push(header)
+  }
+
   private visitProgram(node: Program): void {
-    this.out += '#include <iostream>\n'
-    this.out += '#include <string>\n\n'
     this.out += 'int main() {\n'
     for (const stmt of node.body.filter(node => node.type !== 'ExpressionStatement')) {
       this.out += '    '
@@ -105,6 +116,7 @@ export default class CodeGenerator {
   }
 
   private visitStringLiteral(node: StringLiteral): void {
+    this.addHeader('<string>')
     this.out += parseString(node)
   }
 
