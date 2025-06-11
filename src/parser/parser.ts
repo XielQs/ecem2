@@ -47,6 +47,12 @@ export default class Parser {
     }
   }
 
+  private skipSemicolon(): void {
+    while (this.cur.type === TokenType.SEMICOLON) {
+      this.nextToken()
+    }
+  }
+
   private throwError(
     token: Token,
     custom_message?: string,
@@ -89,6 +95,8 @@ export default class Parser {
         }
         this.throwError(this.cur)
       }
+
+      this.skipSemicolon()
     }
 
     return {
@@ -171,6 +179,8 @@ export default class Parser {
     this.nextToken() // let x = 69
 
     if (this.identifiers[name.value]) {
+      // TODO: fix carets when using semicolon
+
       this.throwError(
         {
           column: 0,
@@ -225,6 +235,8 @@ export default class Parser {
   private parseExpressionStatement(): ExpressionStatement {
     const expression = this.parseExpression(0)
     this.nextToken()
+    this.skipSemicolon()
+    this.skipNewline()
     return {
       type: 'ExpressionStatement',
       expression

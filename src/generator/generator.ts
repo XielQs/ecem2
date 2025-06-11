@@ -15,7 +15,6 @@ import type Parser from '../parser/parser.ts'
 
 export default class CodeGenerator {
   private out = ''
-  // @ts-expect-error = ignore for now!!
   private readonly parser: Parser
 
   constructor(parser: Parser) {
@@ -75,13 +74,17 @@ export default class CodeGenerator {
     switch (expression.type) {
       case 'IntegerLiteral':
         return 'int'
-      case 'Identifier':
       case 'StringLiteral':
         return 'std::string'
       case 'BooleanLiteral':
-        return 'std::bool'
+        return 'bool'
+      case 'Identifier':
+        return this.parseExpressionType(this.parser.identifiers[expression.value])
       case 'InfixExpression':
         return this.parseExpressionType(expression.left)
+      default:
+        // @ts-expect-error = this is a type guard
+        throw new Error(`Unsupported expression type: ${expression.type}`)
     }
   }
 
@@ -111,9 +114,21 @@ export default class CodeGenerator {
 
   private visitInfixExpression(node: InfixExpression): void {
     this.out += '('
+    if (node.left.type === 'StringLiteral') {
+      this.out += 'std::string('
+    }
     this.visit(node.left)
+    if (node.left.type === 'StringLiteral') {
+      this.out += ')'
+    }
     this.out += ` ${node.operator} `
+    if (node.right.type === 'StringLiteral') {
+      this.out += 'std::string('
+    }
     this.visit(node.right)
+    if (node.right.type === 'StringLiteral') {
+      this.out += ')'
+    }
     this.out += ')'
   }
 

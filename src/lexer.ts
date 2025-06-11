@@ -182,9 +182,9 @@ export default class Lexer {
           token.literal = '>'
         }
         break
-      case '':
+      case ';':
         token.type = TokenType.SEMICOLON
-        token.literal = ''
+        token.literal = ';'
         break
       case ':':
         token.type = TokenType.COLON
