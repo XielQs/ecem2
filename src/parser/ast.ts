@@ -5,6 +5,7 @@ export type ASTNode = Program | Statement | Expression
 export interface BaseNode {
   type: string
   token: Token
+  cType: CType | null
 }
 
 export interface Program {
@@ -22,19 +23,24 @@ export interface Identifier extends BaseNode {
 export interface IntegerLiteral extends BaseNode {
   type: 'IntegerLiteral'
   value: number
+  cType: 'IntegerLiteral'
 }
 
 export interface StringLiteral extends BaseNode {
   type: 'StringLiteral'
   value: string
+  cType: 'StringLiteral'
 }
 
 export interface BooleanLiteral extends BaseNode {
   type: 'BooleanLiteral'
   value: boolean
+  cType: 'BooleanLiteral'
 }
 
 export type Literal = IntegerLiteral | StringLiteral | BooleanLiteral | Identifier
+
+export type CType = Exclude<Literal['type'], 'Identifier'>
 
 // ---------------- Statements ----------------
 
@@ -49,7 +55,13 @@ export interface ExpressionStatement {
   expression: ASTNode
 }
 
-export type Statement = LetStatement | ExpressionStatement
+export interface AssignmentStatement {
+  type: 'AssignmentStatement'
+  name: Identifier
+  value: Expression
+}
+
+export type Statement = LetStatement | ExpressionStatement | AssignmentStatement
 
 // ---------------- Expressions ----------------
 

@@ -36,6 +36,9 @@ export function handleError(
   const caretCount = token.literal.length || 1
   const spaceCount = custom_mark.spaces ?? token.column - 1
   const spaces = ' '.repeat(spaceCount < 0 ? 0 : spaceCount)
+
+  if (custom_mark.carets === Infinity) custom_mark.carets = line.length
+
   const carets = '^'.repeat(custom_mark.carets ?? caretCount)
 
   process.stderr.write(

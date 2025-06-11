@@ -1,10 +1,11 @@
 import {
   getPrecedence,
-  isStringCompatible,
   parseTokenAsLiteral,
+  type AssignmentStatement,
   type Expression,
   type ExpressionStatement,
   type Identifier,
+  type InfixExpression,
   type LetStatement,
   type Literal,
   type Program,
@@ -46,7 +47,11 @@ export default class Parser {
     }
   }
 
-  private throwError(token: Token, custom_message?: string): never {
+  private throwError(
+    token: Token,
+    custom_message?: string,
+    custom_mark: { spaces?: number; carets?: number } = {}
+  ): never {
     handleError(
       custom_message ||
         (token.type == TokenType.ILLEGAL
@@ -59,7 +64,9 @@ export default class Parser {
         type: token.type
       },
       this.lexer.source_code,
-      this.lexer.file_name
+      this.lexer.file_name,
+      'panic',
+      custom_mark
     )
   }
 
@@ -72,6 +79,8 @@ export default class Parser {
         continue
       } else if (this.cur.type === TokenType.LET) {
         body.push(this.parseLetStatement())
+      } else if (this.cur.type === TokenType.IDENTIFIER && this.peek.type === TokenType.ASSIGN) {
+        body.push(this.parseAssignmentStatement())
       } else {
         const expr = this.parseExpressionStatement()
         if (expr) {
@@ -97,25 +106,29 @@ export default class Parser {
         return {
           type: 'IntegerLiteral',
           value: parseInt(token.literal, 10),
-          token
+          token,
+          cType: 'IntegerLiteral'
         }
       case TokenType.STRING:
         return {
           type: 'StringLiteral',
           value: token.literal,
-          token
+          token,
+          cType: 'StringLiteral'
         }
       case TokenType.TRUE:
         return {
           type: 'BooleanLiteral',
           value: true,
-          token
+          token,
+          cType: 'BooleanLiteral'
         }
       case TokenType.FALSE:
         return {
           type: 'BooleanLiteral',
           value: false,
-          token
+          token,
+          cType: 'BooleanLiteral'
         }
       case TokenType.IDENTIFIER: {
         const identifier = this.identifiers[token.literal]
@@ -123,17 +136,11 @@ export default class Parser {
           this.throwError(token, `Identifier ${token.literal} is not defined`)
         }
 
-        if (!isStringCompatible(identifier, this.identifiers)) {
-          this.throwError(
-            token,
-            `Identifier ${token.literal} is not a valid string compatible type`
-          )
-        }
-
         return {
           type: 'Identifier',
           value: token.literal,
-          token
+          token,
+          cType: identifier.cType
         }
       }
       default:
@@ -151,7 +158,8 @@ export default class Parser {
     const name: Identifier = {
       type: 'Identifier',
       value: this.cur.literal,
-      token: this.cur
+      token: this.cur,
+      cType: null
     }
 
     this.expectPeek(TokenType.ASSIGN)
@@ -163,28 +171,52 @@ export default class Parser {
     this.nextToken() // let x = 69
 
     if (this.identifiers[name.value]) {
-      handleError(
-        `Identifier ${name.value} has already been declared`,
+      this.throwError(
         {
           column: 0,
           line: name.token.line,
           literal: name.token.literal,
           type: name.token.type
         },
-        this.lexer.source_code,
-        this.lexer.file_name,
-        'panic',
+        `Identifier ${name.value} has already been declared`,
         {
-          carets: this.lexer.source_code.split('\n')[name.token.line - 1].length,
+          carets: Infinity,
           spaces: 0
         }
       )
     }
 
     this.identifiers[name.value] = value
+    name.cType = value.cType || null
 
     return {
       type: 'LetStatement',
+      name,
+      value
+    }
+  }
+
+  private parseAssignmentStatement(): AssignmentStatement {
+    const name: Identifier = {
+      type: 'Identifier',
+      value: this.cur.literal,
+      token: this.cur,
+      cType: null
+    }
+
+    if (!this.identifiers[name.value]) {
+      this.throwError(this.cur, `Identifier ${name.value} is not declared`)
+    }
+
+    this.expectPeek(TokenType.ASSIGN)
+    this.nextToken()
+    const value = this.parseExpression(0)
+
+    this.identifiers[name.value] = value
+    name.cType = value.cType || null
+
+    return {
+      type: 'AssignmentStatement',
       name,
       value
     }
@@ -220,29 +252,42 @@ export default class Parser {
 
       const right = this.parseExpression(opPrecedence)
 
-      // check if right and left are same type
-      const validTypes = ['IntegerLiteral', 'StringLiteral', 'BooleanLiteral']
+      // actual type of left node
+      const leftType =
+        left.type === 'InfixExpression'
+          ? left.cType
+          : left.type === 'Identifier'
+          ? this.identifiers[left.value]?.cType || null
+          : left.type
 
-      const leftNode = (left.type === 'InfixExpression' ? left.right : left) as Identifier
+      const rightType =
+        right.type === 'InfixExpression'
+          ? right.cType
+          : right.type === 'Identifier'
+          ? this.identifiers[(right as Identifier).value]?.cType || null
+          : right.type
 
-      if (
-        validTypes.includes(leftNode.type) &&
-        validTypes.includes(right.type) &&
-        leftNode.type !== right.type
-      ) {
+      if (!leftType || !rightType) {
         this.throwError(
-          right.token,
-          `Cannot operate on ${leftNode.token.type} and ${right.token.type}`
+          operatorToken,
+          `Cannot determine type of left or right operand in infix expression`
         )
       }
 
-      left = {
+      if (leftType !== rightType) {
+        this.throwError(operatorToken, `Cannot operate on ${leftType} and ${rightType}`)
+      }
+
+      const infixNode: InfixExpression = {
         type: 'InfixExpression',
         operator,
         left,
         right,
-        token: operatorToken
+        token: operatorToken,
+        cType: leftType
       }
+
+      left = infixNode
     }
 
     return left

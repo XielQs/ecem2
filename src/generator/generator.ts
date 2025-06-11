@@ -1,4 +1,5 @@
 import type {
+  AssignmentStatement,
   ASTNode,
   BooleanLiteral,
   Expression,
@@ -14,6 +15,7 @@ import type Parser from '../parser/parser.ts'
 
 export default class CodeGenerator {
   private out = ''
+  // @ts-expect-error = ignore for now!!
   private readonly parser: Parser
 
   constructor(parser: Parser) {
@@ -34,6 +36,7 @@ export default class CodeGenerator {
       BooleanLiteral: BooleanLiteral
       LetStatement: LetStatement
       InfixExpression: InfixExpression
+      AssignmentStatement: AssignmentStatement
     }
 
     const typeMap: {
@@ -45,7 +48,8 @@ export default class CodeGenerator {
       StringLiteral: this.visitStringLiteral,
       BooleanLiteral: this.visitBooleanLiteral,
       LetStatement: this.visitLetStatement,
-      InfixExpression: this.visitInfixExpression
+      InfixExpression: this.visitInfixExpression,
+      AssignmentStatement: this.visitAssignmentStatement
     }
     const visitFn = typeMap[node.type] as (node: TypeMap[keyof TypeMap]) => void
     if (visitFn) {
@@ -56,8 +60,8 @@ export default class CodeGenerator {
   }
 
   private visitProgram(node: Program): void {
-    this.out += '#include <stdio.h>\n'
-    this.out += '#include <stdbool.h>\n\n'
+    this.out += '#include <iostream>\n'
+    this.out += '#include <string>\n\n'
     this.out += 'int main() {\n'
     for (const stmt of node.body.filter(node => node.type !== 'ExpressionStatement')) {
       this.out += '    '
@@ -73,9 +77,9 @@ export default class CodeGenerator {
         return 'int'
       case 'Identifier':
       case 'StringLiteral':
-        return 'char*'
+        return 'std::string'
       case 'BooleanLiteral':
-        return 'bool'
+        return 'std::bool'
       case 'InfixExpression':
         return this.parseExpressionType(expression.left)
     }
@@ -105,37 +109,18 @@ export default class CodeGenerator {
     this.out += parseBoolean(node)
   }
 
-  private concatString(node: InfixExpression): string | null {
-    if (node.operator !== '+') return null
-
-    const collect = (n: ASTNode): string | null => {
-      if (n.type === 'StringLiteral') {
-        return n.value
-      } else if (n.type === 'InfixExpression' && n.operator === '+') {
-        const left = collect(n.left)
-        const right = collect(n.right)
-        return left !== null && right !== null ? left + right : null
-      } else if (n.type === 'Identifier') {
-        return collect(this.parser.identifiers[n.value])
-      } else {
-        return null
-      }
-    }
-
-    return collect(node)
-  }
-
   private visitInfixExpression(node: InfixExpression): void {
-    const concated = this.concatString(node)
-    if (concated !== null) {
-      this.out += `"${concated}"`
-      return
-    }
-
     this.out += '('
     this.visit(node.left)
     this.out += ` ${node.operator} `
     this.visit(node.right)
     this.out += ')'
+  }
+
+  private visitAssignmentStatement(node: AssignmentStatement): void {
+    this.visit(node.name)
+    this.out += ' = '
+    this.visit(node.value)
+    this.out += ';\n'
   }
 }

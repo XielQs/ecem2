@@ -47,6 +47,6 @@ const generator = new CodeGenerator(parser)
 
 const c_code = generator.generate(program)
 
-const out_file = (args.getArgument('output') as string) || 'a.c'
+const out_file = (args.getArgument('output') as string) || 'a.cpp'
 
 writeFileSync(out_file, c_code)

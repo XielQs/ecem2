@@ -1,3 +1,4 @@
-let x = "Merhaba"
-let y = "Selam " + x
-let b = "Dünya " + y
+let x = "Selam " + "ALEYKUM SELAM"
+x = x + "Dünya"
+let y = x + ""
+let b = "Sa" + y + 5

@@ -1,12 +1,4 @@
-import type Parser from './index.ts'
-import type {
-  BooleanLiteral,
-  Expression,
-  Identifier,
-  IntegerLiteral,
-  Literal,
-  StringLiteral
-} from './index.ts'
+import type { BooleanLiteral, Identifier, IntegerLiteral, Literal, StringLiteral } from './index.ts'
 import { TokenType, type Token } from './token.ts'
 
 export const PRECEDENCE: Record<
@@ -36,13 +28,23 @@ export function getPrecedence(token: Token): number {
 export function parseTokenAsLiteral(token: Token): Literal['value'] | null {
   switch (token.type) {
     case TokenType.INT:
-      return parseInteger({ type: 'IntegerLiteral', value: parseInt(token.literal, 10), token })
+      return parseInteger({
+        type: 'IntegerLiteral',
+        value: parseInt(token.literal, 10),
+        token,
+        cType: 'IntegerLiteral'
+      })
     case TokenType.STRING:
-      return parseString({ type: 'StringLiteral', value: token.literal, token })
+      return parseString({
+        type: 'StringLiteral',
+        value: token.literal,
+        token,
+        cType: 'StringLiteral'
+      })
     case TokenType.TRUE:
-      return parseBoolean({ type: 'BooleanLiteral', value: true, token })
+      return parseBoolean({ type: 'BooleanLiteral', value: true, token, cType: 'BooleanLiteral' })
     case TokenType.FALSE:
-      return parseBoolean({ type: 'BooleanLiteral', value: false, token })
+      return parseBoolean({ type: 'BooleanLiteral', value: false, token, cType: 'BooleanLiteral' })
     default:
       return null
   }
@@ -62,16 +64,4 @@ export function parseString(node: StringLiteral): string {
 
 export function parseBoolean(node: BooleanLiteral): string {
   return node.value ? 'true' : 'false'
-}
-
-export function isStringCompatible(expr: Expression, identifiers: Parser['identifiers']): boolean {
-  if (expr.type === 'StringLiteral') return true
-  if (expr.type === 'InfixExpression') {
-    return isStringCompatible(expr.left, identifiers) && isStringCompatible(expr.right, identifiers)
-  }
-  if (expr.type === 'Identifier') {
-    const identifier = identifiers[expr.value]
-    return isStringCompatible(identifier, identifiers)
-  }
-  return false
 }
