@@ -43,7 +43,7 @@ console.log(JSON.stringify(program, null, 2))
 
 console.log(parser.identifiers)
 
-const generator = new CodeGenerator()
+const generator = new CodeGenerator(parser)
 
 const c_code = generator.generate(program)
 

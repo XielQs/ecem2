@@ -10,9 +10,15 @@ import type {
   StringLiteral
 } from '../parser/ast.ts'
 import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/parseHelpers.ts'
+import type Parser from '../parser/parser.ts'
 
 export default class CodeGenerator {
   private out = ''
+  private readonly parser: Parser
+
+  constructor(parser: Parser) {
+    this.parser = parser
+  }
 
   public generate(node: ASTNode): string {
     this.visit(node as Exclude<ASTNode, { type: 'ExpressionStatement' }>)
@@ -53,9 +59,9 @@ export default class CodeGenerator {
     this.out += '#include <stdio.h>\n'
     this.out += '#include <stdbool.h>\n\n'
     this.out += 'int main() {\n'
-    for (const stmt of node.body) {
+    for (const stmt of node.body.filter(node => node.type !== 'ExpressionStatement')) {
       this.out += '    '
-      if (stmt.type !== 'ExpressionStatement') this.visit(stmt)
+      this.visit(stmt)
     }
     this.out += '    return 0;\n'
     this.out += '}\n'
@@ -109,6 +115,8 @@ export default class CodeGenerator {
         const left = collect(n.left)
         const right = collect(n.right)
         return left !== null && right !== null ? left + right : null
+      } else if (n.type === 'Identifier') {
+        return collect(this.parser.identifiers[n.value])
       } else {
         return null
       }

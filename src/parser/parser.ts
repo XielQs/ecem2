@@ -1,5 +1,6 @@
 import {
   getPrecedence,
+  isStringCompatible,
   parseTokenAsLiteral,
   type Expression,
   type ExpressionStatement,
@@ -116,6 +117,25 @@ export default class Parser {
           value: false,
           token
         }
+      case TokenType.IDENTIFIER: {
+        const identifier = this.identifiers[token.literal]
+        if (!identifier) {
+          this.throwError(token, `Identifier ${token.literal} is not defined`)
+        }
+
+        if (!isStringCompatible(identifier, this.identifiers)) {
+          this.throwError(
+            token,
+            `Identifier ${token.literal} is not a valid string compatible type`
+          )
+        }
+
+        return {
+          type: 'Identifier',
+          value: token.literal,
+          token
+        }
+      }
       default:
         if (!identifier) return null as T extends null ? null : never
         this.throwError(

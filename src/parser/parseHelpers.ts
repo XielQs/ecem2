@@ -1,4 +1,12 @@
-import type { BooleanLiteral, Identifier, IntegerLiteral, Literal, StringLiteral } from './ast.ts'
+import type Parser from './index.ts'
+import type {
+  BooleanLiteral,
+  Expression,
+  Identifier,
+  IntegerLiteral,
+  Literal,
+  StringLiteral
+} from './index.ts'
 import { TokenType, type Token } from './token.ts'
 
 export const PRECEDENCE: Record<
@@ -54,4 +62,16 @@ export function parseString(node: StringLiteral): string {
 
 export function parseBoolean(node: BooleanLiteral): string {
   return node.value ? 'true' : 'false'
+}
+
+export function isStringCompatible(expr: Expression, identifiers: Parser['identifiers']): boolean {
+  if (expr.type === 'StringLiteral') return true
+  if (expr.type === 'InfixExpression') {
+    return isStringCompatible(expr.left, identifiers) && isStringCompatible(expr.right, identifiers)
+  }
+  if (expr.type === 'Identifier') {
+    const identifier = identifiers[expr.value]
+    return isStringCompatible(identifier, identifiers)
+  }
+  return false
 }
