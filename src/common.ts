@@ -1,5 +1,6 @@
 import { FILE_EXTENSION } from './constants.ts'
 import type { Token } from './parser/token.ts'
+import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 
 export function readFile(file_path: string, retry: boolean): string {
@@ -11,6 +12,14 @@ export function readFile(file_path: string, retry: boolean): string {
     }
     console.error(`Error: Could not read file ${file_path}`)
     process.exit(1)
+  }
+}
+
+export function commandPath(command: string): string | null {
+  try {
+    return execSync(`command -v ${command}`, { encoding: 'utf8' }).trim()
+  } catch {
+    return null
   }
 }
 

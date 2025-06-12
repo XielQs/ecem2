@@ -9,10 +9,17 @@ export default class ArgumentParser {
   }
 
   public showHelp(): never {
-    console.log('Usage: <file> [-o <file>] [--no-parse] [-h|--help] [-v|--version]')
+    console.log(
+      'Usage: <file> [-o <file>] [--no-parse] [--no-compile] [--compile] [--run] [--production] [-V|--verbose] [-h|--help] [-v|--version]'
+    )
     console.log('Options:')
     console.log('  -o, --out <file>   Specify output file')
     console.log('  --no-parse         Skip parsing and only tokenize the input file')
+    console.log('  --no-compile       Do not compile the generated code, only generate it')
+    console.log('  --compile          Only compile the generated code, do not link it')
+    console.log('  --run              Run the compiled code')
+    console.log('  --production       Optimize the generated code for production')
+    console.log('  -V, --verbose      Enable verbose output')
     console.log('  -h, --help         Show this help message')
     console.log('  -v, --version      Show compiler version')
     process.exit(0)
@@ -42,6 +49,22 @@ export default class ArgumentParser {
           break
         case '--no-parse':
           this.parsed_arguments.no_parse = true
+          break
+        case '--no-compile':
+          this.parsed_arguments.no_compile = true
+          break
+        case '--compile':
+          this.parsed_arguments.compile = true
+          break
+        case '--run':
+          this.parsed_arguments.run = true
+          break
+        case '--production':
+          this.parsed_arguments.production = true
+          break
+        case '-V':
+        case '--verbose':
+          this.parsed_arguments.verbose = true
           break
         case '-h':
         case '--help':
