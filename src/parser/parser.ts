@@ -21,8 +21,8 @@ import Lexer from '../lexer.ts'
 
 export default class Parser {
   private readonly lexer: Lexer
-  private cur: Token
-  private peek: Token
+  public cur: Token
+  public peek: Token
   public identifiers: Record<string, Expression> = {}
 
   public constructor(lexer: Lexer) {
@@ -58,7 +58,7 @@ export default class Parser {
     }
   }
 
-  private throwError(
+  public throwError(
     token: Token,
     custom_message?: string,
     custom_mark: { spaces?: number; carets?: number } = {}
@@ -384,11 +384,7 @@ export default class Parser {
       this.throwError(cur, `${cur.literal} is not a function`)
     }
 
-    const argTypes = args.map(arg => arg.cType)
-
-    const result = Functions.validateCall(fn.name, argTypes)
-
-    if (result !== true) this.throwError(cur, result)
+    Functions.validateCall(fn.name, args, this)
 
     callee.cType = fn.returnType
 
