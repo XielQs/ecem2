@@ -86,17 +86,22 @@ export default class Lexer {
       this.readChar() // move past the closing quote
       return str
     } else {
+      const line = this.source_code.split('\n')[start_line]
       handleError(
         'Unterminated string literal',
         {
           type: TokenType.ILLEGAL,
-          literal: this.source_code.split('\n')[start_line].slice(start - 1),
+          literal: this.ch,
           line: start_line,
           column: start
         },
         this.source_code,
         this.file_name,
-        'error'
+        'error',
+        {
+          spaces: line.slice(this.position - start + 1).length,
+          carets: Infinity
+        }
       )
     }
   }
