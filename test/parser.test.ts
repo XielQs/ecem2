@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'bun:test'
 import Parser, {
   type BooleanLiteral,
+  type CallExpression,
   type InfixExpression,
   type IntegerLiteral,
   type LetStatement,
@@ -8,6 +9,7 @@ import Parser, {
 } from '../src/parser/index.ts'
 import { expectPanic } from './utils.ts'
 import Lexer from '../src/lexer.ts'
+import Functions from '../src/generator/functions.ts'
 
 describe('Parser', () => {
   it('parses single let statement with integer', () => {
@@ -127,5 +129,61 @@ describe('Parser', () => {
     const code = 'let result = "Hello" + 42'
     const parser = new Parser(new Lexer(code, 'test'))
     expectPanic(() => parser.parseProgram(), 'Cannot operate on string and integer')
+  })
+
+  it('parses function call with no arguments', () => {
+    Functions.register({
+      name: 'foo',
+      args: [],
+      returnType: 'IntegerLiteral'
+    })
+    const code = 'let x = foo()'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const stmt = program.body[0] as LetStatement<CallExpression>
+    expect(stmt.value.type).toBe('CallExpression')
+    expect(stmt.value.callee.value).toBe('foo')
+    expect(stmt.value.args.length).toBe(0)
+  })
+
+  it('parses function call with arguments', () => {
+    Functions.register({
+      name: 'add',
+      args: [{ type: ['IntegerLiteral'] }, { type: ['IntegerLiteral'] }],
+      returnType: 'IntegerLiteral'
+    })
+    const code = 'let y = add(1, 2)'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const stmt = program.body[0] as LetStatement<CallExpression<IntegerLiteral>>
+    expect(stmt.value.type).toBe('CallExpression')
+    expect(stmt.value.callee.value).toBe('add')
+    expect(stmt.value.args.length).toBe(2)
+    expect(stmt.value.args[0].type).toBe('IntegerLiteral')
+    expect(stmt.value.args[0].value).toBe(1)
+    expect(stmt.value.args[1].type).toBe('IntegerLiteral')
+    expect(stmt.value.args[1].value).toBe(2)
+  })
+
+  it('parses nested function calls', () => {
+    Functions.register({
+      name: 'add',
+      args: [{ type: ['IntegerLiteral'] }, { type: ['IntegerLiteral'] }],
+      returnType: 'IntegerLiteral'
+    })
+    Functions.register({
+      name: 'double',
+      args: [{ type: ['IntegerLiteral'] }],
+      returnType: 'IntegerLiteral'
+    })
+    const code = 'let n = double(add(1, 2))'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const stmt = program.body[0] as LetStatement<CallExpression<CallExpression<IntegerLiteral>>>
+    expect(stmt.value.type).toBe('CallExpression')
+    expect(stmt.value.callee.value).toBe('double')
+    expect(stmt.value.args[0].type).toBe('CallExpression')
+    expect(stmt.value.args[0].callee.value).toBe('add')
+    expect(stmt.value.args[0].args.length).toBe(2)
   })
 })

@@ -79,10 +79,10 @@ export interface InfixExpression<L extends Expression = Expression, R extends Ex
   right: R
 }
 
-export interface CallExpression extends BaseNode {
+export interface CallExpression<A extends Expression = Expression> extends BaseNode {
   type: 'CallExpression'
   callee: Identifier
-  args: Expression[]
+  args: A[]
 }
 
 export type Expression = Literal | InfixExpression | CallExpression
