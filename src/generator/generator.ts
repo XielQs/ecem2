@@ -2,16 +2,20 @@ import type {
   AssignmentStatement,
   ASTNode,
   BooleanLiteral,
+  CallExpression,
   Expression,
+  ExpressionStatement,
   Identifier,
   InfixExpression,
   IntegerLiteral,
   LetStatement,
+  VoidLiteral,
   Program,
   StringLiteral
 } from '../parser/ast.ts'
 import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/parseHelpers.ts'
 import type Parser from '../parser/parser.ts'
+import Functions from './functions.ts'
 
 export default class CodeGenerator {
   private out = ''
@@ -23,7 +27,7 @@ export default class CodeGenerator {
   }
 
   public generate(node: ASTNode): string {
-    this.visit(node as Exclude<ASTNode, { type: 'ExpressionStatement' }>)
+    this.visit(node)
     this.generateHeaders()
     return this.out
   }
@@ -35,16 +39,19 @@ export default class CodeGenerator {
     }
   }
 
-  private visit(node: Exclude<ASTNode, { type: 'ExpressionStatement' }>): void {
+  private visit(node: ASTNode): void {
     type TypeMap = {
       Program: Program
       Identifier: Identifier
       IntegerLiteral: IntegerLiteral
       StringLiteral: StringLiteral
       BooleanLiteral: BooleanLiteral
+      VoidLiteral: VoidLiteral
       LetStatement: LetStatement
       InfixExpression: InfixExpression
       AssignmentStatement: AssignmentStatement
+      ExpressionStatement: ExpressionStatement
+      CallExpression: CallExpression
     }
 
     const typeMap: {
@@ -55,9 +62,12 @@ export default class CodeGenerator {
       IntegerLiteral: this.visitIntegerLiteral,
       StringLiteral: this.visitStringLiteral,
       BooleanLiteral: this.visitBooleanLiteral,
+      VoidLiteral: this.visitVoidLiteral,
       LetStatement: this.visitLetStatement,
       InfixExpression: this.visitInfixExpression,
-      AssignmentStatement: this.visitAssignmentStatement
+      AssignmentStatement: this.visitAssignmentStatement,
+      ExpressionStatement: this.visitExpressionStatement,
+      CallExpression: this.visitCallExpression
     }
     const visitFn = typeMap[node.type] as (node: TypeMap[keyof TypeMap]) => void
     if (visitFn) {
@@ -73,7 +83,7 @@ export default class CodeGenerator {
 
   private visitProgram(node: Program): void {
     this.out += 'int main() {\n'
-    for (const stmt of node.body.filter(node => node.type !== 'ExpressionStatement')) {
+    for (const stmt of node.body) {
       this.out += '    '
       this.visit(stmt)
     }
@@ -81,7 +91,7 @@ export default class CodeGenerator {
     this.out += '}\n'
   }
 
-  private parseExpressionType(expression: Expression): string {
+  private parseExpressionType(expression: Expression): string | null {
     switch (expression.type) {
       case 'IntegerLiteral':
         return 'int'
@@ -89,10 +99,15 @@ export default class CodeGenerator {
         return 'std::string'
       case 'BooleanLiteral':
         return 'bool'
+      case 'VoidLiteral':
+        return 'void'
       case 'Identifier':
         return this.parseExpressionType(this.parser.identifiers[expression.value])
       case 'InfixExpression':
         return this.parseExpressionType(expression.left)
+      case 'CallExpression':
+        // TODO: properly implement return type for call expressions
+        return 'void'
       default:
         // @ts-expect-error = this is a type guard
         throw new Error(`Unsupported expression type: ${expression.type}`)
@@ -100,7 +115,11 @@ export default class CodeGenerator {
   }
 
   private visitLetStatement(node: LetStatement): void {
-    this.out += this.parseExpressionType(node.value) + ' '
+    const expType = this.parseExpressionType(node.value)
+    if (!expType) {
+      throw new Error(`Cannot determine type for expression: ${node.value.type}`)
+    }
+    this.out += expType + ' '
     this.visit(node.name)
     this.out += ' = '
     this.visit(node.value)
@@ -122,6 +141,10 @@ export default class CodeGenerator {
 
   private visitBooleanLiteral(node: BooleanLiteral): void {
     this.out += parseBoolean(node)
+  }
+
+  private visitVoidLiteral(_node: VoidLiteral): void {
+    this.out += 'void'
   }
 
   private visitInfixExpression(node: InfixExpression): void {
@@ -149,5 +172,39 @@ export default class CodeGenerator {
     this.out += ' = '
     this.visit(node.value)
     this.out += ';\n'
+  }
+
+  private visitExpressionStatement(node: ExpressionStatement): void {
+    this.visit(node.expression)
+    this.out += ';\n'
+  }
+
+  private visitCallExpression(node: CallExpression): void {
+    if (node.callee.type !== 'Identifier') throw new Error('Unsupported callee type')
+
+    const funcName = node.callee.value
+
+    if (!Functions.has(funcName)) {
+      throw new Error(`Function ${funcName} is not defined`)
+    }
+
+    // handle function calls FOR NOW, maybe later we will use a library for this
+    if (funcName === 'print') {
+      this.addHeader('<iostream>')
+      this.out += 'std::cout'
+      for (const arg of node.args) {
+        this.out += ' << '
+        this.visit(arg)
+      }
+      this.out += ' << std::endl;\n'
+      return
+    }
+
+    this.out += funcName + '('
+    for (let i = 0; i < node.args.length; i++) {
+      this.visit(node.args[i])
+      if (i < node.args.length - 1) this.out += ', '
+    }
+    this.out += ')'
   }
 }

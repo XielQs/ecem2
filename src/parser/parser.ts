@@ -1,7 +1,10 @@
 import {
+  cTypeToHumanReadable as CTypeToHuman,
   getPrecedence,
   parseTokenAsLiteral,
   type AssignmentStatement,
+  type CallExpression,
+  type CType,
   type Expression,
   type ExpressionStatement,
   type Identifier,
@@ -12,6 +15,7 @@ import {
   type Statement
 } from './index.ts'
 import { type Token, TokenType } from './token.ts'
+import Functions from '../generator/functions.ts'
 import { handleError } from '../common.ts'
 import Lexer from '../lexer.ts'
 
@@ -34,6 +38,7 @@ export default class Parser {
 
   private expectPeek(type: TokenType): void {
     this.skipNewline()
+    this.skipSemicolon()
     if (this.peek.type === type) {
       this.nextToken()
     } else {
@@ -239,15 +244,44 @@ export default class Parser {
     this.skipNewline()
     return {
       type: 'ExpressionStatement',
-      expression
+      expression,
+      token: this.cur,
+      cType: expression.cType || null
     }
   }
 
   private parseExpression(precedence = 0, identifier?: Identifier): Expression {
-    let left = this.parseLiteral(this.cur, identifier || null) as Expression | null
+    let left: Expression | null = null
+
+    if (this.cur.type === TokenType.IDENTIFIER) {
+      if (this.peek.type === TokenType.LPAREN) {
+        const identifier: Identifier = {
+          type: 'Identifier',
+          value: this.cur.literal,
+          token: this.cur,
+          cType: null // will be set later
+        }
+
+        return this.parseCallExpression(identifier)
+      } else {
+        left = this.parseLiteral(this.cur, null)
+      }
+    } else {
+      left = this.parseLiteral(this.cur, identifier || null)
+    }
 
     if (!left) {
       this.throwError(this.cur, `Unexpected token ${this.cur.type} in expression`)
+    }
+
+    const getNodeCType = (node: Expression): CType | undefined => {
+      if (node.type === 'InfixExpression') return node.cType || null
+      if (node.type === 'Identifier') {
+        const ref = this.identifiers[node.value]
+        return ref?.cType ?? 'VoidLiteral'
+      }
+      if (node.type === 'CallExpression') return node.callee.cType || null
+      return node.type
     }
 
     while (
@@ -255,6 +289,25 @@ export default class Parser {
       this.peek.type !== TokenType.NEWLINE &&
       precedence < getPrecedence(this.peek)
     ) {
+      left = left as Expression // stupid TS, left is not null!!!
+      if (this.peek.type === TokenType.LPAREN && left.type === 'Identifier') {
+        // function call
+        const identifier = this.identifiers[this.cur.literal]
+        if (!identifier) {
+          this.throwError(this.cur, `Identifier ${this.cur.literal} is not defined`)
+        }
+
+        return this.parseCallExpression({
+          type: 'Identifier',
+          value: this.cur.literal,
+          token: this.cur,
+          cType: identifier.cType || null
+        })
+      }
+
+      // end of call expression
+      if (this.peek.type === TokenType.RPAREN) break
+
       const operatorToken = this.peek
       const operator = operatorToken.literal
       const opPrecedence = getPrecedence(operatorToken)
@@ -264,44 +317,87 @@ export default class Parser {
 
       const right = this.parseExpression(opPrecedence)
 
-      // actual type of left node
-      const leftType =
-        left.type === 'InfixExpression'
-          ? left.cType
-          : left.type === 'Identifier'
-          ? this.identifiers[left.value]?.cType || null
-          : left.type
-
-      const rightType =
-        right.type === 'InfixExpression'
-          ? right.cType
-          : right.type === 'Identifier'
-          ? this.identifiers[(right as Identifier).value]?.cType || null
-          : right.type
+      const leftType = getNodeCType(left)
+      const rightType = getNodeCType(right)
 
       if (!leftType || !rightType) {
         this.throwError(
           operatorToken,
-          `Cannot determine type of left or right operand in infix expression`
+          'Cannot determine type of left or right operand in infix expression'
         )
       }
 
-      if (leftType !== rightType) {
-        this.throwError(operatorToken, `Cannot operate on ${leftType} and ${rightType}`)
+      if (leftType === 'VoidLiteral' || rightType === 'VoidLiteral') {
+        this.throwError(operatorToken, `Cannot operate on void literals`)
       }
 
-      const infixNode: InfixExpression = {
+      if (leftType !== rightType) {
+        this.throwError(
+          operatorToken,
+          `Cannot operate on ${CTypeToHuman(leftType)} and ${CTypeToHuman(rightType)}`
+        )
+      }
+
+      if (leftType === 'StringLiteral' && operatorToken.type !== TokenType.PLUS) {
+        this.throwError(
+          operatorToken,
+          `Cannot use operator ${operator} on string literals, only + is allowed`
+        )
+      }
+
+      left = {
         type: 'InfixExpression',
         operator,
         left,
         right,
         token: operatorToken,
         cType: leftType
-      }
-
-      left = infixNode
+      } satisfies InfixExpression
     }
 
     return left
+  }
+
+  private parseCallExpression(callee: Identifier): CallExpression {
+    const cur = this.cur
+
+    this.expectPeek(TokenType.LPAREN)
+
+    const args: Expression[] = []
+
+    if (this.peek.type !== TokenType.RPAREN) {
+      this.nextToken()
+      args.push(this.parseExpression(0))
+
+      while (this.peek.type === TokenType.COMMA) {
+        this.nextToken()
+        this.nextToken()
+        args.push(this.parseExpression(0))
+      }
+    }
+
+    this.expectPeek(TokenType.RPAREN)
+
+    const fn = Functions.get(cur.literal)
+
+    if (!fn) {
+      this.throwError(cur, `${cur.literal} is not a function`)
+    }
+
+    const argTypes = args.map(arg => arg.cType)
+
+    const result = Functions.validateCall(fn.name, argTypes)
+
+    if (result !== true) this.throwError(cur, result)
+
+    callee.cType = fn.returnType
+
+    return {
+      type: 'CallExpression',
+      token: callee.token,
+      callee,
+      args,
+      cType: null
+    }
   }
 }

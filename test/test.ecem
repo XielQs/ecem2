@@ -1,4 +1,4 @@
-let x = "Selam " + "ALEYKUM SELAM"
-x = x + "Dünya"
-let y = x + ""
-let b = "Sa" + y + 5
+let y = "test 1"
+let x = "test 2" + y
+
+print("test", x)

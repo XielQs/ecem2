@@ -1,4 +1,11 @@
-import type { BooleanLiteral, Identifier, IntegerLiteral, Literal, StringLiteral } from './index.ts'
+import type {
+  BooleanLiteral,
+  CType,
+  Identifier,
+  IntegerLiteral,
+  Literal,
+  StringLiteral
+} from './index.ts'
 import { TokenType, type Token } from './token.ts'
 
 export const PRECEDENCE: Record<
@@ -50,6 +57,21 @@ export function parseTokenAsLiteral(token: Token): Literal['value'] | null {
   }
 }
 
+export function cTypeToHumanReadable(cType: CType | null): string {
+  switch (cType) {
+    case 'IntegerLiteral':
+      return 'integer'
+    case 'StringLiteral':
+      return 'string'
+    case 'BooleanLiteral':
+      return 'boolean'
+    case 'VoidLiteral':
+      return 'void'
+    default:
+      return 'unknown'
+  }
+}
+
 export function parseIdentifier(node: Identifier): string {
   return node.value
 }
@@ -64,4 +86,8 @@ export function parseString(node: StringLiteral): string {
 
 export function parseBoolean(node: BooleanLiteral): string {
   return node.value ? 'true' : 'false'
+}
+
+export function parseVoid(): string {
+  return 'void'
 }
