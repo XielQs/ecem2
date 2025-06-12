@@ -213,7 +213,7 @@ export default class Lexer {
       case '"':
         token.type = TokenType.STRING
         token.literal = this.readString()
-        break
+        return token
       case '\0':
         token.type = TokenType.END_OF_FILE
         token.literal = ''
