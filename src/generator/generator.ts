@@ -81,6 +81,15 @@ export default class CodeGenerator {
     if (!this.headers.includes(header)) this.headers.push(header)
   }
 
+  private insertSemi(): void {
+    if (this.out.endsWith(';')) return
+    if (this.out.endsWith('\n')) {
+      if (this.out.at(-2) === ';') return
+      this.out = this.out.slice(0, -1) // Remove the last newline
+    }
+    this.out += ';\n'
+  }
+
   private visitProgram(node: Program): void {
     this.out += 'int main() {\n'
     for (const stmt of node.body) {
@@ -171,23 +180,20 @@ export default class CodeGenerator {
     this.visit(node.name)
     this.out += ' = '
     this.visit(node.value)
-    this.out += ';\n'
+    this.insertSemi()
   }
 
   private visitExpressionStatement(node: ExpressionStatement): void {
     this.visit(node.expression)
-    this.out += ';\n'
+    this.insertSemi()
   }
 
   private visitCallExpression(node: CallExpression): void {
     if (node.callee.type !== 'Identifier') throw new Error('Unsupported callee type')
-
     const funcName = node.callee.value
-
     if (!Functions.has(funcName)) {
       throw new Error(`Function ${funcName} is not defined`)
     }
-
     // handle function calls FOR NOW, maybe later we will use a library for this
     if (funcName === 'print') {
       this.addHeader('<iostream>')
@@ -199,7 +205,6 @@ export default class CodeGenerator {
       this.out += ' << std::endl;\n'
       return
     }
-
     this.out += funcName + '('
     for (let i = 0; i < node.args.length; i++) {
       this.visit(node.args[i])
