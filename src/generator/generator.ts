@@ -12,9 +12,9 @@ import type {
   VoidLiteral,
   Program,
   StringLiteral
-} from '../parser/ast.ts'
-import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/parseHelpers.ts'
-import type Parser from '../parser/parser.ts'
+} from '../parser/index.ts'
+import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
+import type Parser from '../parser/index.ts'
 import Functions from './functions.ts'
 
 export default class CodeGenerator {
