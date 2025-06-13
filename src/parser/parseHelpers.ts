@@ -57,7 +57,7 @@ export function parseTokenAsLiteral(token: Token): Literal['value'] | null {
   }
 }
 
-export function cTypeToHumanReadable(cType: CType | null): string {
+export function CTypeToHuman(cType: CType | null): string {
   switch (cType) {
     case 'IntegerLiteral':
       return 'integer'
@@ -68,7 +68,22 @@ export function cTypeToHumanReadable(cType: CType | null): string {
     case 'VoidLiteral':
       return 'void'
     default:
-      return 'unknown'
+      return cType || 'unknown'
+  }
+}
+
+export function CTypeToCode(cType: CType): string {
+  switch (cType) {
+    case 'IntegerLiteral':
+      return 'int'
+    case 'StringLiteral':
+      return 'string'
+    case 'BooleanLiteral':
+      return 'boolean'
+    case 'VoidLiteral':
+      return 'void'
+    default:
+      throw new Error(`Unknown CType: ${cType}`)
   }
 }
 

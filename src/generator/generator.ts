@@ -13,7 +13,13 @@ import type {
   Program,
   StringLiteral
 } from '../parser/index.ts'
-import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
+import {
+  CTypeToCode,
+  parseBoolean,
+  parseIdentifier,
+  parseInteger,
+  parseString
+} from '../parser/index.ts'
 import type Parser from '../parser/index.ts'
 import Functions from './functions.ts'
 
@@ -115,8 +121,11 @@ export default class CodeGenerator {
       case 'InfixExpression':
         return this.parseExpressionType(expression.left)
       case 'CallExpression':
-        // TODO: properly implement return type for call expressions
-        return 'void'
+        const func = Functions.get(expression.callee.value)
+        if (!func) {
+          throw new Error(`Function ${expression.callee.value} is not defined`)
+        }
+        return CTypeToCode(func.returnType)
       default:
         // @ts-expect-error = this is a type guard
         throw new Error(`Unsupported expression type: ${expression.type}`)
@@ -194,6 +203,7 @@ export default class CodeGenerator {
     if (!Functions.has(funcName)) {
       throw new Error(`Function ${funcName} is not defined`)
     }
+
     // handle function calls FOR NOW, maybe later we will use a library for this
     if (funcName === 'print') {
       this.addHeader('<iostream>')
@@ -204,7 +214,10 @@ export default class CodeGenerator {
       }
       this.out += ' << std::endl;\n'
       return
+    } else {
+      throw new Error(`Function ${funcName} is not implemented yet`)
     }
+
     this.out += funcName + '('
     for (let i = 0; i < node.args.length; i++) {
       this.visit(node.args[i])

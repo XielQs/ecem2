@@ -1,5 +1,5 @@
 import {
-  cTypeToHumanReadable as CTypeToHuman,
+  CTypeToHuman,
   getPrecedence,
   parseTokenAsLiteral,
   type AssignmentStatement,
@@ -393,7 +393,7 @@ export default class Parser {
       token: callee.token,
       callee,
       args,
-      cType: null
+      cType: fn.returnType || null
     }
   }
 }

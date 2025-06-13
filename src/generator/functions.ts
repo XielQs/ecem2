@@ -1,4 +1,4 @@
-import Parser, { cTypeToHumanReadable, parseTokenAsLiteral } from '../parser/index.ts'
+import Parser, { CTypeToHuman, parseTokenAsLiteral } from '../parser/index.ts'
 import type { CType, Expression } from '../parser/index.ts'
 
 type FunctionDefinition = {
@@ -53,8 +53,8 @@ export default class Functions {
             type: parser.cur.type
           },
           `Argument ${i + 1} of ${name} must be ${expectedType
-            .map(cTypeToHumanReadable)
-            .join(' or ')}, got ${cTypeToHumanReadable(argTypes[i])}`
+            .map(CTypeToHuman)
+            .join(' or ')}, got ${CTypeToHuman(argTypes[i])}`
         )
       }
     }
