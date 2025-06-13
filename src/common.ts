@@ -36,9 +36,9 @@ export function handleError(
   token: Token,
   source: string,
   file_name: string,
-  type: 'panic' | 'error' = 'panic',
+  type: 'panic' | 'error' | 'warning' = 'panic',
   custom_mark: { spaces?: number; carets?: number } = {}
-): never {
+): void {
   const lines = source.split('\n')
 
   const line = lines[token.line]
@@ -59,5 +59,5 @@ export function handleError(
   process.stderr.write(spaces + carets + '\n')
   process.stderr.write(`[${type}]: ${message}\n`)
 
-  process.exit(1)
+  if (type !== 'warning') process.exit(1)
 }

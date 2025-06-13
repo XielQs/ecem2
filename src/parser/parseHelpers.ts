@@ -79,7 +79,7 @@ export function CTypeToCode(cType: CType): string {
     case 'StringLiteral':
       return 'string'
     case 'BooleanLiteral':
-      return 'boolean'
+      return 'bool'
     case 'VoidLiteral':
       return 'void'
     default:

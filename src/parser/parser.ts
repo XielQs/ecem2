@@ -19,11 +19,17 @@ import Functions from '../generator/functions.ts'
 import { handleError } from '../common.ts'
 import Lexer from '../lexer.ts'
 
+type IdentifierInfo = {
+  expression: Expression
+  referenced: boolean
+  declaredAt: Token
+}
+
 export default class Parser {
   private readonly lexer: Lexer
   public cur: Token
   public peek: Token
-  public identifiers: Record<string, Expression> = {}
+  public identifiers: Record<string, IdentifierInfo> = {}
 
   public constructor(lexer: Lexer) {
     this.lexer = lexer
@@ -58,6 +64,26 @@ export default class Parser {
     }
   }
 
+  public throwWarning(
+    token: Token,
+    message?: string,
+    custom_mark: { spaces?: number; carets?: number } = {}
+  ): void {
+    handleError(
+      message || `Unexpected token ${token.type}`,
+      {
+        column: token.column,
+        line: token.line,
+        literal: (parseTokenAsLiteral(token) || token.literal).toString(),
+        type: token.type
+      },
+      this.lexer.source_code,
+      this.lexer.file_name,
+      'warning',
+      custom_mark
+    )
+  }
+
   public throwError(
     token: Token,
     custom_message?: string,
@@ -79,6 +105,7 @@ export default class Parser {
       'panic',
       custom_mark
     )
+    process.exit(1) // unreachable
   }
 
   public parseProgram(): Program {
@@ -102,6 +129,13 @@ export default class Parser {
       }
 
       this.skipSemicolon()
+    }
+
+    // check for unused identifiers
+    for (const [name, info] of Object.entries(this.identifiers)) {
+      if (!info.referenced) {
+        this.throwWarning(info.declaredAt, `Identifier ${name} is declared but never used`)
+      }
     }
 
     return {
@@ -153,7 +187,7 @@ export default class Parser {
           type: 'Identifier',
           value: token.literal,
           token,
-          cType: identifier.cType
+          cType: identifier.expression.cType
         }
       }
       default:
@@ -201,7 +235,11 @@ export default class Parser {
       )
     }
 
-    this.identifiers[name.value] = value
+    this.identifiers[name.value] = {
+      expression: value,
+      referenced: false,
+      declaredAt: name.token
+    }
     name.cType = value.cType || null
 
     return {
@@ -227,7 +265,11 @@ export default class Parser {
     this.nextToken()
     const value = this.parseExpression(0)
 
-    this.identifiers[name.value] = value
+    this.identifiers[name.value] = {
+      expression: value,
+      referenced: false,
+      declaredAt: name.token
+    }
     name.cType = value.cType || null
 
     return {
@@ -274,11 +316,15 @@ export default class Parser {
       this.throwError(this.cur, `Unexpected token ${this.cur.type} in expression`)
     }
 
+    if (left.type === 'Identifier' && !this.identifiers[left.value].referenced) {
+      this.identifiers[left.value].referenced = true
+    }
+
     const getNodeCType = (node: Expression): CType | undefined => {
       if (node.type === 'InfixExpression') return node.cType || null
       if (node.type === 'Identifier') {
         const ref = this.identifiers[node.value]
-        return ref?.cType ?? 'VoidLiteral'
+        return ref.expression.cType ?? 'VoidLiteral'
       }
       if (node.type === 'CallExpression') return node.callee.cType || null
       return node.type
@@ -289,7 +335,6 @@ export default class Parser {
       this.peek.type !== TokenType.NEWLINE &&
       precedence < getPrecedence(this.peek)
     ) {
-      left = left as Expression // stupid TS, left is not null!!!
       if (this.peek.type === TokenType.LPAREN && left.type === 'Identifier') {
         // function call
         const identifier = this.identifiers[this.cur.literal]
@@ -301,7 +346,7 @@ export default class Parser {
           type: 'Identifier',
           value: this.cur.literal,
           token: this.cur,
-          cType: identifier.cType || null
+          cType: identifier.expression.cType || null
         })
       }
 
