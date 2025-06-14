@@ -103,6 +103,7 @@ export default class Lexer {
           carets: Infinity
         }
       )
+      process.exit(1) // unreachable
     }
   }
 

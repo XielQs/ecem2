@@ -117,7 +117,7 @@ export default class CodeGenerator {
       case 'VoidLiteral':
         return 'void'
       case 'Identifier':
-        return this.parseExpressionType(this.parser.identifiers[expression.value])
+        return this.parseExpressionType(this.parser.identifiers[expression.value].expression)
       case 'InfixExpression':
         return this.parseExpressionType(expression.left)
       case 'CallExpression':

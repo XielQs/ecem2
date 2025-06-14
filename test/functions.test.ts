@@ -1,7 +1,7 @@
 import Functions from '../src/generator/functions.ts'
 import Parser from '../src/parser/parser.ts'
 import { expectPanic } from './utils.ts'
-import { describe, expect } from 'bun:test'
+import { describe } from 'bun:test'
 import Lexer from '../src/lexer.ts'
 import { it } from 'bun:test'
 
