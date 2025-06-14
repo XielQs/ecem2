@@ -66,11 +66,11 @@ export default class Parser {
 
   public throwWarning(
     token: Token,
-    message?: string,
+    message: string,
     custom_mark: { spaces?: number; carets?: number } = {}
   ): void {
     handleError(
-      message || `Unexpected token ${token.type}`,
+      message,
       {
         column: token.column,
         line: token.line,
