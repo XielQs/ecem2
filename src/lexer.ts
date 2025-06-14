@@ -166,6 +166,28 @@ export default class Lexer {
           token.literal = '/'
         }
         break
+      case '&':
+        if (this.peekChar() == '&') {
+          this.readChar()
+          token.type = TokenType.AND
+          token.literal = '&&'
+          token.column--
+        } else {
+          token.type = TokenType.AMPERSAND
+          token.literal = '&'
+        }
+        break
+      case '|':
+        if (this.peekChar() == '|') {
+          this.readChar()
+          token.type = TokenType.OR
+          token.literal = '||'
+          token.column--
+        } else {
+          token.type = TokenType.PIPE
+          token.literal = '|'
+        }
+        break
       case '<':
         if (this.peekChar() == '=') {
           this.readChar()

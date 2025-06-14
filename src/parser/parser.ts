@@ -89,15 +89,16 @@ export default class Parser {
     custom_message?: string,
     custom_mark: { spaces?: number; carets?: number } = {}
   ): never {
+    const literal = (parseTokenAsLiteral(token) || token.literal).toString()
     handleError(
       custom_message ||
         (token.type == TokenType.ILLEGAL
           ? 'Unexpected illegal token'
           : `Unexpected token ${token.type}`),
       {
-        column: token.column,
+        column: token.column + (literal.length - 1),
         line: token.line,
-        literal: (parseTokenAsLiteral(token) || token.literal).toString(),
+        literal,
         type: token.type
       },
       this.lexer.source_code,

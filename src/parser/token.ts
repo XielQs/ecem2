@@ -15,6 +15,10 @@ export enum TokenType {
   SLASH = '/',
   EQ = '==',
   NOT_EQ = '!=',
+  AND = '&&',
+  OR = '||',
+  AMPERSAND = '&',
+  PIPE = '|',
 
   LT = '<',
   GT = '>',
