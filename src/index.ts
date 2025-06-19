@@ -112,6 +112,9 @@ if (!args.getArgument('no_compile')) {
     compiler_args.push('-c') // compile only, do not link
   }
 
+  // add stdlib
+  compiler_args.push('-I', resolve(import.meta.dirname, '../stdlib'))
+
   compiler_args.push('-o')
   compiler_args.push(out_file)
   compiler_args.push(tmp_file)

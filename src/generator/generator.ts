@@ -11,7 +11,8 @@ import type {
   LetStatement,
   VoidLiteral,
   Program,
-  StringLiteral
+  StringLiteral,
+  ImportStatement
 } from '../parser/index.ts'
 import {
   CTypeToCode,
@@ -57,6 +58,7 @@ export default class CodeGenerator {
       InfixExpression: InfixExpression
       AssignmentStatement: AssignmentStatement
       ExpressionStatement: ExpressionStatement
+      ImportStatement: ImportStatement
       CallExpression: CallExpression
     }
 
@@ -73,6 +75,7 @@ export default class CodeGenerator {
       InfixExpression: this.visitInfixExpression,
       AssignmentStatement: this.visitAssignmentStatement,
       ExpressionStatement: this.visitExpressionStatement,
+      ImportStatement: this.visitImportStatement,
       CallExpression: this.visitCallExpression
     }
     const visitFn = typeMap[node.type] as (node: TypeMap[keyof TypeMap]) => void
@@ -99,7 +102,9 @@ export default class CodeGenerator {
   private visitProgram(node: Program): void {
     this.out += 'int main() {\n'
     for (const stmt of node.body) {
-      this.out += '    '
+      if (stmt.type !== 'ImportStatement') {
+        this.out += '    '
+      }
       this.visit(stmt)
     }
     this.out += '    return 0;\n'
@@ -197,6 +202,10 @@ export default class CodeGenerator {
     this.insertSemi()
   }
 
+  private visitImportStatement(node: ImportStatement): void {
+    this.addHeader(`<ecem2/${node.name}.hpp>`)
+  }
+
   private visitCallExpression(node: CallExpression): void {
     if (node.callee.type !== 'Identifier') throw new Error('Unsupported callee type')
     const funcName = node.callee.value
@@ -204,18 +213,13 @@ export default class CodeGenerator {
       throw new Error(`Function ${funcName} is not defined`)
     }
 
-    // handle function calls FOR NOW, maybe later we will use a library for this
-    if (funcName === 'print') {
-      this.addHeader('<iostream>')
-      this.out += 'std::cout'
-      for (const arg of node.args) {
-        this.out += ' << '
-        this.visit(arg)
+    this.out += `ecem2::${funcName}(`
+    for (let i = 0; i < node.args.length; i++) {
+      this.visit(node.args[i])
+      if (i < node.args.length - 1) {
+        this.out += ', '
       }
-      this.out += ' << std::endl;\n'
-      return
-    } else {
-      throw new Error(`Function ${funcName} is not implemented yet`)
     }
+    this.out += ')'
   }
 }

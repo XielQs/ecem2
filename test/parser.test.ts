@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'bun:test'
 import Parser, {
   type BooleanLiteral,
   type CallExpression,
@@ -7,9 +6,18 @@ import Parser, {
   type LetStatement,
   type StringLiteral
 } from '../src/parser/index.ts'
+import { STDModule } from '../src/generator/modules.ts'
+import Functions from '../src/generator/functions.ts'
+import { describe, it, expect } from 'bun:test'
 import { expectPanic } from './utils.ts'
 import Lexer from '../src/lexer.ts'
-import Functions from '../src/generator/functions.ts'
+
+export const enum TESTModule {
+  TEST = 'test'
+}
+
+// @ts-expect-error - hide STDModule.TEST from type checking
+STDModule.TEST = TESTModule.TEST
 
 describe('Parser', () => {
   it('parses single let statement with integer', () => {
@@ -135,12 +143,13 @@ describe('Parser', () => {
     Functions.register({
       name: 'foo',
       args: [],
-      returnType: 'IntegerLiteral'
+      returnType: 'IntegerLiteral',
+      module: TESTModule.TEST as unknown as STDModule
     })
-    const code = 'let x = foo()'
+    const code = 'import <test>\nlet x = foo()'
     const parser = new Parser(new Lexer(code, 'test'))
     const program = parser.parseProgram()
-    const stmt = program.body[0] as LetStatement<CallExpression>
+    const stmt = program.body[1] as LetStatement<CallExpression>
     expect(stmt.value.type).toBe('CallExpression')
     expect(stmt.value.callee.value).toBe('foo')
     expect(stmt.value.args.length).toBe(0)
@@ -150,12 +159,13 @@ describe('Parser', () => {
     Functions.register({
       name: 'add',
       args: [{ type: ['IntegerLiteral'] }, { type: ['IntegerLiteral'] }],
-      returnType: 'IntegerLiteral'
+      returnType: 'IntegerLiteral',
+      module: TESTModule.TEST as unknown as STDModule
     })
-    const code = 'let y = add(1, 2)'
+    const code = 'import <test>\nlet y = add(1, 2)'
     const parser = new Parser(new Lexer(code, 'test'))
     const program = parser.parseProgram()
-    const stmt = program.body[0] as LetStatement<CallExpression<IntegerLiteral>>
+    const stmt = program.body[1] as LetStatement<CallExpression<IntegerLiteral>>
     expect(stmt.value.type).toBe('CallExpression')
     expect(stmt.value.callee.value).toBe('add')
     expect(stmt.value.args.length).toBe(2)
@@ -169,17 +179,19 @@ describe('Parser', () => {
     Functions.register({
       name: 'add',
       args: [{ type: ['IntegerLiteral'] }, { type: ['IntegerLiteral'] }],
-      returnType: 'IntegerLiteral'
+      returnType: 'IntegerLiteral',
+      module: TESTModule.TEST as unknown as STDModule
     })
     Functions.register({
       name: 'double',
       args: [{ type: ['IntegerLiteral'] }],
-      returnType: 'IntegerLiteral'
+      returnType: 'IntegerLiteral',
+      module: TESTModule.TEST as unknown as STDModule
     })
-    const code = 'let n = double(add(1, 2))'
+    const code = 'import <test>\nlet n = double(add(1, 2))'
     const parser = new Parser(new Lexer(code, 'test'))
     const program = parser.parseProgram()
-    const stmt = program.body[0] as LetStatement<CallExpression<CallExpression<IntegerLiteral>>>
+    const stmt = program.body[1] as LetStatement<CallExpression<CallExpression<IntegerLiteral>>>
     expect(stmt.value.type).toBe('CallExpression')
     expect(stmt.value.callee.value).toBe('double')
     expect(stmt.value.args[0].type).toBe('CallExpression')

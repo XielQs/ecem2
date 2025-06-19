@@ -1,9 +1,16 @@
+import { STDModule } from '../src/generator/modules.ts'
 import Functions from '../src/generator/functions.ts'
 import Parser from '../src/parser/parser.ts'
 import { expectPanic } from './utils.ts'
-import { describe } from 'bun:test'
+import { describe, it } from 'bun:test'
 import Lexer from '../src/lexer.ts'
-import { it } from 'bun:test'
+
+const enum TESTModule {
+  TEST = 'test'
+}
+
+// @ts-expect-error - hide STDModule.TEST from type checking
+STDModule.TEST = TESTModule.TEST
 
 describe('Functions', () => {
   it('throws error on calling unknown function', () => {
@@ -16,9 +23,10 @@ describe('Functions', () => {
     Functions.register({
       name: 'negate',
       args: [{ type: ['BooleanLiteral'] }],
-      returnType: 'BooleanLiteral'
+      returnType: 'BooleanLiteral',
+      module: TESTModule.TEST as unknown as STDModule
     })
-    const code = 'let b = negate(123)'
+    const code = 'import <test>\nlet b = negate(123)'
     const parser = new Parser(new Lexer(code, 'test'))
     expectPanic(() => parser.parseProgram(), 'Argument 1 of negate must be boolean, got integer')
   })
@@ -27,9 +35,10 @@ describe('Functions', () => {
     Functions.register({
       name: 'add',
       args: [{ type: ['IntegerLiteral'] }, { type: ['IntegerLiteral'] }],
-      returnType: 'IntegerLiteral'
+      returnType: 'IntegerLiteral',
+      module: TESTModule.TEST as unknown as STDModule
     })
-    const code = 'let result = add(1, 2, 3)'
+    const code = 'import <test>\nlet result = add(1, 2, 3)'
     const parser = new Parser(new Lexer(code, 'test'))
     expectPanic(() => parser.parseProgram(), 'add expects 2 argument(s), got 3')
   })
@@ -38,9 +47,10 @@ describe('Functions', () => {
     Functions.register({
       name: 'concat',
       args: [{ type: ['StringLiteral'] }, { type: ['StringLiteral'] }],
-      returnType: 'StringLiteral'
+      returnType: 'StringLiteral',
+      module: TESTModule.TEST as unknown as STDModule
     })
-    const code = 'let result = concat("Hello")'
+    const code = 'import <test>\nlet result = concat("Hello")'
     const parser = new Parser(new Lexer(code, 'test'))
     expectPanic(() => parser.parseProgram(), 'concat expects 2 argument(s), got 1')
   })

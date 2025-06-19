@@ -1,4 +1,5 @@
-let y = "test 1"
-let x = "test 2" + y
+import <io>
 
-print("test", x)
+let x = "selam"
+
+print(x)

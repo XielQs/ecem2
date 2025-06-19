@@ -8,6 +8,7 @@ import {
   type Expression,
   type ExpressionStatement,
   type Identifier,
+  type ImportStatement,
   type InfixExpression,
   type LetStatement,
   type Literal,
@@ -16,6 +17,7 @@ import {
 } from './index.ts'
 import { type Token, TokenType } from './token.ts'
 import Functions from '../generator/functions.ts'
+import { STDModule } from '../generator/index.ts'
 import { handleError } from '../common.ts'
 import Lexer from '../lexer.ts'
 
@@ -30,6 +32,7 @@ export default class Parser {
   public cur: Token
   public peek: Token
   public identifiers: Record<string, IdentifierInfo> = {}
+  public imports: Set<STDModule> = new Set()
 
   public constructor(lexer: Lexer) {
     this.lexer = lexer
@@ -109,6 +112,10 @@ export default class Parser {
     process.exit(1) // unreachable
   }
 
+  public isModuleImported(module: STDModule): boolean {
+    return this.imports.has(module)
+  }
+
   public parseProgram(): Program {
     const body: Statement[] = []
 
@@ -120,6 +127,8 @@ export default class Parser {
         body.push(this.parseLetStatement())
       } else if (this.cur.type === TokenType.IDENTIFIER && this.peek.type === TokenType.ASSIGN) {
         body.push(this.parseAssignmentStatement())
+      } else if (this.cur.type === TokenType.IMPORT) {
+        body.push(this.parseImportStatement())
       } else {
         const expr = this.parseExpressionStatement()
         if (expr) {
@@ -378,7 +387,10 @@ export default class Parser {
       }
 
       if ((operator === '&&' || operator === '||') && leftType !== 'BooleanLiteral') {
-        this.throwError(operatorToken, `Cannot use logical operator ${operator} on non-boolean type ${CTypeToHuman(leftType)}`)
+        this.throwError(
+          operatorToken,
+          `Cannot use logical operator ${operator} on non-boolean type ${CTypeToHuman(leftType)}`
+        )
       }
 
       if (leftType !== rightType) {
@@ -434,6 +446,13 @@ export default class Parser {
       this.throwError(cur, `${cur.literal} is not a function`)
     }
 
+    if (!this.isModuleImported(fn.module)) {
+      return this.throwError(
+        cur,
+        `${fn.name} is not a function, did you forget to import <${fn.module}>?`
+      )
+    }
+
     Functions.validateCall(fn.name, args, this)
 
     callee.cType = fn.returnType
@@ -444,6 +463,30 @@ export default class Parser {
       callee,
       args,
       cType: fn.returnType || null
+    }
+  }
+
+  private parseImportStatement(): ImportStatement {
+    this.expectPeek(TokenType.LT)
+    const start = this.cur
+    this.nextToken()
+
+    const name = this.cur.literal as STDModule
+    this.expectPeek(TokenType.GT)
+
+    if (!Object.values(STDModule).includes(name)) {
+      this.throwError(start, `Unknown module ${name}`, {
+        carets: name.length + 2 // +2 for the < and >
+      })
+    }
+    this.nextToken()
+
+    this.imports.add(name)
+
+    return {
+      type: 'ImportStatement',
+      name,
+      token: this.cur
     }
   }
 }

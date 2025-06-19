@@ -1,5 +1,6 @@
 import Parser, { CTypeToHuman, parseTokenAsLiteral } from '../parser/index.ts'
 import type { CType, Expression } from '../parser/index.ts'
+import { STDModule } from './modules.ts'
 
 type FunctionDefinition = {
   name: string
@@ -8,6 +9,7 @@ type FunctionDefinition = {
     type: CType[]
     variadic?: boolean
   }[]
+  module: STDModule
 }
 
 export default class Functions {
@@ -25,9 +27,13 @@ export default class Functions {
     return this.functions.has(name)
   }
 
-  static validateCall(name: string, args: Expression[], parser: Parser): void {
+  static validateCall(
+    name: string,
+    args: Expression[],
+    parser: Parser
+  ): FunctionDefinition | never {
     const fn = this.functions.get(name)
-    if (!fn) return parser.throwError(parser.cur, `${name} is not defined`)
+    if (!fn) return parser.throwError(parser.cur, `${name} is not a function`)
 
     const argTypes = args.map(arg => arg.cType)
     const expected = fn.args
@@ -58,11 +64,14 @@ export default class Functions {
         )
       }
     }
+
+    return fn
   }
 }
 
 Functions.register({
   name: 'print',
   returnType: 'VoidLiteral',
-  args: [{ type: ['StringLiteral'], variadic: true }]
+  args: [{ type: ['StringLiteral', 'BooleanLiteral', 'IntegerLiteral'], variadic: true }],
+  module: STDModule.IO
 })

@@ -1,3 +1,4 @@
+import type { STDModule } from '../generator/modules.ts'
 import type { Token } from './token.ts'
 
 export type ASTNode = Program | Statement | Expression
@@ -67,7 +68,13 @@ export interface AssignmentStatement {
   value: Expression
 }
 
-export type Statement = LetStatement | ExpressionStatement | AssignmentStatement
+export interface ImportStatement {
+  type: 'ImportStatement'
+  name: STDModule
+  token: Token
+}
+
+export type Statement = LetStatement | ExpressionStatement | AssignmentStatement | ImportStatement
 
 // ---------------- Expressions ----------------
 

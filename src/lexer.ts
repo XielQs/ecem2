@@ -9,7 +9,8 @@ export const KEYWORDS: Record<string, TokenType> = {
   if: TokenType.IF,
   else: TokenType.ELSE,
   return: TokenType.RETURN,
-  while: TokenType.WHILE
+  while: TokenType.WHILE,
+  import: TokenType.IMPORT
 }
 
 export default class Lexer {
