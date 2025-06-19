@@ -15,7 +15,8 @@ export function readFile(file_path: string, retry: boolean): string {
   }
 }
 
-export function commandPath(command: string): string | null {
+export function commandPath(command: string | undefined): string | null {
+  if (!command) return null
   try {
     return execSync(`command -v ${command}`, { encoding: 'utf8' }).trim()
   } catch {

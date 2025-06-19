@@ -13,39 +13,35 @@ import Lexer from './lexer.ts'
 const args = new ArgumentParser(process.argv.slice(2))
 args.parseArguments()
 
-if (!args.getArgument('files')) {
-  console.error('[error]: No file provided')
+const files = args.getArgument('files') as string[] | undefined
+
+if (!files || files.length !== 1) {
+  console.error('[error]: You must provide exactly one file.')
   args.showHelp()
+  process.exit(1) // unreachable, stupid typescript...
 }
 
-if ((args.parsed_arguments.files as string[]).length > 1) {
-  console.error('[error]: Only one file can be processed at a time')
-  process.exit(1)
-}
+const file_name = resolve(files[0])
 
-if (args.getArgument('no_compile') && args.getArgument('compile')) {
-  console.error('[error]: Cannot use --no-compile and --compile at the same time')
-  process.exit(1)
-}
+const conflicting_args = [
+  ['no_compile', 'compile'],
+  ['run', 'compile'],
+  ['run', 'no_compile']
+]
 
-if (args.getArgument('run') && (args.getArgument('compile') || args.getArgument('no_compile'))) {
-  console.error('[error]: Cannot use --run with --compile or --no-compile')
-  process.exit(1)
-}
-
-function verbose(message: any): void {
-  if (args.getArgument('verbose')) {
-    console.log('[verbose]:', message)
+for (const [a, b] of conflicting_args) {
+  if (args.getArgument(a) && args.getArgument(b)) {
+    console.error(`[error]: Cannot use --${a} with --${b}`)
+    process.exit(1)
   }
 }
 
-const file_name = (args.getArgument('files') as string[])[0]
-
-const start_time = performance.now()
+function verbose(...message: any): void {
+  if (args.getArgument('verbose')) console.log('[verbose]:', ...message)
+}
 
 const code = readFile(file_name, true)
-
-const lexer = new Lexer(code, resolve(file_name))
+const lexer = new Lexer(code, file_name)
 
 if (args.getArgument('no_parse')) {
   let token: Token | null = null
@@ -57,119 +53,107 @@ if (args.getArgument('no_parse')) {
 }
 
 const parser = new Parser(lexer)
-
 const program = parser.parseProgram()
 
-verbose(JSON.stringify(program, null, 2))
-
-verbose(parser.identifiers)
+verbose('[verbose]: AST', JSON.stringify(program, null, 2))
+verbose('[verbose]: Identifiers', parser.identifiers)
 
 const generator = new CodeGenerator(parser)
-
 const generated_code = generator.generate(program)
 
-const out_extension = args.getArgument('compile')
-  ? 'o'
-  : args.getArgument('no_compile')
-  ? 'cpp'
-  : 'out'
+const should_compile = !args.getArgument('no_compile')
+const out_ext = args.getArgument('compile') ? 'o' : !should_compile ? 'cpp' : 'out'
 
-let out_file = resolve((args.getArgument('output') as string) || 'a.' + out_extension)
-const tmp_file = resolve(tmpdir(), randomBytes(16).toString('hex') + '.cpp')
+let out_path = resolve((args.getArgument('output') as string) || `a.${out_ext}`)
+const tmp_cpp_path = resolve(tmpdir(), `${randomBytes(16).toString('hex')}.cpp`)
 
-writeFileSync(args.getArgument('no_compile') ? out_file : tmp_file, generated_code)
+if (args.getArgument('run')) {
+  out_path = resolve(tmpdir(), `${randomBytes(16).toString('hex')}.out`)
+}
 
-if (!args.getArgument('no_compile')) {
-  const compiler_path =
-    (process.env.CXX && commandPath(process.env.CXX)) ||
-    commandPath('clang++') ||
-    commandPath('g++')
+writeFileSync(!should_compile ? out_path : tmp_cpp_path, generated_code)
 
-  if (!compiler_path) {
-    console.error(
-      '[error]: No C++ compiler found. Please set the CXX environment variable or install clang++ or g++'
-    )
-    rmSync(tmp_file)
-    process.exit(1)
+if (!should_compile) {
+  console.log(`[info]: Generated code written to ${out_path}`)
+  process.exit(0)
+}
+
+const compiler = commandPath(process.env.CXX) || commandPath('clang++') || commandPath('g++')
+
+if (!compiler) {
+  console.error('[error]: No C++ compiler found (CXX env, clang++, g++ tried)')
+  rmSync(tmp_cpp_path)
+  process.exit(1)
+}
+
+const start_time = performance.now()
+
+const compiler_args = ['-std=c++17', '-Wall', '-Wextra', '-Wno-unused-parameter']
+
+if (args.getArgument('production')) {
+  compiler_args.push('-O3')
+  compiler_args.push('-s')
+} else {
+  compiler_args.push('-g3')
+  compiler_args.push('-O0')
+  compiler_args.push('-ggdb3')
+}
+
+if (args.getArgument('compile')) {
+  compiler_args.push('-c') // compile only, do not link
+}
+
+// add stdlib
+compiler_args.push('-I', resolve(import.meta.dirname, '../stdlib'))
+
+compiler_args.push('-o')
+compiler_args.push(out_path)
+compiler_args.push(tmp_cpp_path)
+
+const proc = spawn(compiler, compiler_args, { stdio: 'inherit' })
+
+proc.on('error', err => {
+  console.error(`[error]: Failed to start compiler: ${err.message}`)
+  try {
+    rmSync(tmp_cpp_path)
+  } catch {}
+  process.exit(1)
+})
+
+proc.on('exit', code => {
+  try {
+    rmSync(tmp_cpp_path)
+  } catch {}
+  if (code !== 0) {
+    console.error(`[error]: Compiler exited with code ${code}`)
+    process.exit(code)
   }
+
+  const elapsed = (performance.now() - start_time) / 1000
+  const info = args.getArgument('production') ? 'stripped + optimized' : 'notstripped + debuginfo'
+  const build_type = args.getArgument('production') ? 'production' : 'development'
+  console.log(`[info]: Compiled ${build_type} build [${info}] in ${elapsed.toFixed(2)}s`)
 
   if (args.getArgument('run')) {
-    out_file = resolve(tmpdir(), randomBytes(16).toString('hex') + '.out')
+    console.log(`[info]: Running compiled code`)
+    const run_proc = spawn(out_path, [], { stdio: 'inherit', shell: true })
+
+    run_proc.on('error', err => {
+      console.error(`[error]: Failed to run compiled code: ${err.message}`)
+      try {
+        rmSync(out_path)
+      } catch {}
+      process.exit(1)
+    })
+
+    run_proc.on('exit', exit_code => {
+      try {
+        rmSync(out_path)
+      } catch {}
+      if (exit_code !== 0) {
+        console.error(`[error]: Compiled code exited with code ${exit_code}`)
+        process.exit(exit_code)
+      }
+    })
   }
-
-  const compiler_args = ['-std=c++17', '-Wall', '-Wextra']
-
-  if (args.getArgument('production')) {
-    compiler_args.push('-O3')
-    compiler_args.push('-s')
-  } else {
-    compiler_args.push('-g3')
-    compiler_args.push('-O0')
-    compiler_args.push('-ggdb3')
-  }
-
-  if (args.getArgument('compile')) {
-    compiler_args.push('-c') // compile only, do not link
-  }
-
-  // add stdlib
-  compiler_args.push('-I', resolve(import.meta.dirname, '../stdlib'))
-
-  compiler_args.push('-o')
-  compiler_args.push(out_file)
-  compiler_args.push(tmp_file)
-
-  const proc = spawn(compiler_path, compiler_args, {
-    stdio: 'inherit'
-  })
-
-  proc.on('error', err => {
-    console.error(`[error]: Failed to start compiler: ${err.message}`)
-    try {
-      rmSync(tmp_file)
-    } catch {}
-    process.exit(1)
-  })
-
-  proc.on('exit', code => {
-    try {
-      rmSync(tmp_file)
-    } catch {}
-    if (code !== 0) {
-      console.error(`[error]: Compiler exited with code ${code}`)
-      process.exit(code)
-    }
-    const elapsed_time = performance.now() - start_time
-    const extra_info = args.getArgument('production')
-      ? 'stripped + optimized'
-      : 'notstripped + debuginfo'
-    const build_type = args.getArgument('production') ? 'production' : 'development'
-    console.log(
-      `[info]: Compiled ${build_type} build [${extra_info}] in ${(elapsed_time / 1000).toFixed(2)}s`
-    )
-    if (args.getArgument('run')) {
-      const run_proc = spawn(out_file, [], {
-        stdio: 'inherit',
-        shell: true
-      })
-
-      run_proc.on('error', err => {
-        console.error(`[error]: Failed to run compiled code: ${err.message}`)
-        try {
-          rmSync(out_file)
-        } catch {}
-        process.exit(1)
-      })
-
-      run_proc.on('exit', exit_code => {
-        try {
-          rmSync(out_file)
-        } catch {}
-        if (exit_code !== 0) {
-          console.error(`[error]: Compiled code exited with code ${exit_code}`)
-          process.exit(exit_code)
-        }
-      })
-    }
-  })
-}
+})
