@@ -88,7 +88,7 @@ if (!compiler) {
 
 const start_time = performance.now()
 
-const compiler_args = ['-std=c++17', '-Wall', '-Wextra', '-Wno-unused-parameter']
+const compiler_args = ['-std=c++17', '-Wall', '-Wextra', '-Wno-unused-variable']
 
 if (args.getArgument('production')) {
   compiler_args.push('-O3')
