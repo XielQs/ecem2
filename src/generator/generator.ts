@@ -217,12 +217,5 @@ export default class CodeGenerator {
     } else {
       throw new Error(`Function ${funcName} is not implemented yet`)
     }
-
-    this.out += funcName + '('
-    for (let i = 0; i < node.args.length; i++) {
-      this.visit(node.args[i])
-      if (i < node.args.length - 1) this.out += ', '
-    }
-    this.out += ')'
   }
 }
