@@ -96,7 +96,7 @@ export default class Parser {
           ? 'Unexpected illegal token'
           : `Unexpected token ${token.type}`),
       {
-        column: token.column + (literal.length - 1),
+        column: token.column,
         line: token.line,
         literal,
         type: token.type

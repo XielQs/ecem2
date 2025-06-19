@@ -123,7 +123,6 @@ export default class Lexer {
           this.readChar()
           token.type = TokenType.EQ
           token.literal = '=='
-          token.column--
         } else {
           token.type = TokenType.ASSIGN
           token.literal = '='
@@ -134,7 +133,6 @@ export default class Lexer {
           this.readChar()
           token.type = TokenType.NOT_EQ
           token.literal = '!='
-          token.column--
         } else {
           token.type = TokenType.BANG
           token.literal = '!'
@@ -171,7 +169,6 @@ export default class Lexer {
           this.readChar()
           token.type = TokenType.AND
           token.literal = '&&'
-          token.column--
         } else {
           token.type = TokenType.AMPERSAND
           token.literal = '&'
@@ -182,7 +179,6 @@ export default class Lexer {
           this.readChar()
           token.type = TokenType.OR
           token.literal = '||'
-          token.column--
         } else {
           token.type = TokenType.PIPE
           token.literal = '|'
@@ -193,7 +189,6 @@ export default class Lexer {
           this.readChar()
           token.type = TokenType.LT_EQ
           token.literal = '<='
-          token.column--
         } else {
           token.type = TokenType.LT
           token.literal = '<'
@@ -204,7 +199,6 @@ export default class Lexer {
           this.readChar()
           token.type = TokenType.GT_EQ
           token.literal = '>='
-          token.column--
         } else {
           token.type = TokenType.GT
           token.literal = '>'
