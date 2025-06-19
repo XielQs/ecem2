@@ -44,13 +44,6 @@ export enum TokenType {
   WHILE = 'while'
 }
 
-export function tokenTypeToString(type: TokenType) {
-  return (
-    Object.keys(TokenType).find(key => TokenType[key as keyof typeof TokenType] === type) ||
-    'UNKNOWN'
-  )
-}
-
 export interface Token {
   type: TokenType
   literal: string
