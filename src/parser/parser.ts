@@ -377,6 +377,10 @@ export default class Parser {
         this.throwError(operatorToken, `Cannot operate on void literals`)
       }
 
+      if ((operator === '&&' || operator === '||') && leftType !== 'BooleanLiteral') {
+        this.throwError(operatorToken, `Cannot use logical operator ${operator} on non-boolean type ${CTypeToHuman(leftType)}`)
+      }
+
       if (leftType !== rightType) {
         this.throwError(
           operatorToken,

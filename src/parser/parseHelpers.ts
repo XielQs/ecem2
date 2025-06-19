@@ -14,15 +14,19 @@ export const PRECEDENCE: Record<
   | TokenType.SLASH
   | TokenType.ASTERISK
   | TokenType.LPAREN
-  | TokenType.RPAREN,
+  | TokenType.RPAREN
+  | TokenType.AND
+  | TokenType.OR,
   number
 > = {
-  [TokenType.PLUS]: 1,
-  [TokenType.MINUS]: 1,
-  [TokenType.SLASH]: 2,
-  [TokenType.ASTERISK]: 2,
-  [TokenType.LPAREN]: 3,
-  [TokenType.RPAREN]: 3
+  [TokenType.OR]: 1,
+  [TokenType.AND]: 2,
+  [TokenType.PLUS]: 3,
+  [TokenType.MINUS]: 3,
+  [TokenType.SLASH]: 4,
+  [TokenType.ASTERISK]: 4,
+  [TokenType.LPAREN]: 5,
+  [TokenType.RPAREN]: 5
 }
 
 export function getPrecedence(token: Token): number {
