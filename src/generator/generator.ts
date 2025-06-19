@@ -26,7 +26,7 @@ import Functions from './functions.ts'
 export default class CodeGenerator {
   private out = ''
   private readonly parser: Parser
-  private headers: string[] = []
+  private headers: Set<string> = new Set()
 
   constructor(parser: Parser) {
     this.parser = parser
@@ -39,9 +39,9 @@ export default class CodeGenerator {
   }
 
   private generateHeaders(): void {
-    const headers = this.headers.join('\n#include ')
+    const headers = [...this.headers].map(header => `#include ${header}`).join('\n')
     if (headers) {
-      this.out = `#include ${headers}\n\n` + this.out
+      this.out = `${headers}\n\n` + this.out
     }
   }
 
@@ -84,7 +84,7 @@ export default class CodeGenerator {
   }
 
   private addHeader(header: string): void {
-    if (!this.headers.includes(header)) this.headers.push(header)
+    if (!this.headers.has(header)) this.headers.add(header)
   }
 
   private insertSemi(): void {
