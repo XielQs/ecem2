@@ -159,7 +159,9 @@ export default class CodeGenerator {
 
   private visitStringLiteral(node: StringLiteral): void {
     this.addHeader('<string>')
+    this.out += 'std::string('
     this.out += parseString(node)
+    this.out += ')'
   }
 
   private visitBooleanLiteral(node: BooleanLiteral): void {
@@ -172,21 +174,9 @@ export default class CodeGenerator {
 
   private visitInfixExpression(node: InfixExpression): void {
     this.out += '('
-    if (node.left.type === 'StringLiteral') {
-      this.out += 'std::string('
-    }
     this.visit(node.left)
-    if (node.left.type === 'StringLiteral') {
-      this.out += ')'
-    }
     this.out += ` ${node.operator} `
-    if (node.right.type === 'StringLiteral') {
-      this.out += 'std::string('
-    }
     this.visit(node.right)
-    if (node.right.type === 'StringLiteral') {
-      this.out += ')'
-    }
     this.out += ')'
   }
 
