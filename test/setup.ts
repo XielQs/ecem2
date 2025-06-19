@@ -6,9 +6,19 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  if (isMonitored || (stderrSpy?.mock.calls?.length ?? 0) < 1) return
+  const calls = stderrSpy?.mock.calls.map(call => call[0].toString())
+  // remove warnings
+  if (calls) {
+    for (let i = 0; i < calls.length; i++) {
+      if (calls[i].startsWith('[warning]:')) {
+        calls.splice(i - 3, 3 + 1)
+        i -= 3
+      }
+    }
+  }
+  if (isMonitored || !calls || calls.length === 0) return
   console.log('=== STDERR OUTPUT ===')
-  console.log(stderrSpy!.mock.calls.map(call => call[0].toString()).join(''))
+  console.log(calls.join(''))
   console.log('=== END STDERR OUTPUT ===')
   clearSpies()
   stderrSpy?.mockClear()
