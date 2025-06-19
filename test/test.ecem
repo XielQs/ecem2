@@ -1,5 +1,6 @@
+import <string>
 import <io>
 
-let x = "selam"
+let x = 5
 
-print(x)
+print(len("Hello, world!"))

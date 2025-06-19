@@ -1,3 +1,4 @@
 export enum STDModule {
-  IO = 'io'
+  IO = 'io',
+  STRING = 'string'
 }

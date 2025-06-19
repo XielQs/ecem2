@@ -75,3 +75,10 @@ Functions.register({
   args: [{ type: ['StringLiteral', 'BooleanLiteral', 'IntegerLiteral'], variadic: true }],
   module: STDModule.IO
 })
+
+Functions.register({
+  name: 'len',
+  returnType: 'IntegerLiteral',
+  args: [{ type: ['StringLiteral'] }],
+  module: STDModule.STRING
+})
