@@ -1,15 +1,12 @@
-import Parser, { CTypeToHuman, parseTokenAsLiteral } from '../parser/index.ts'
+import FunctionValidator, { type FunctionArg } from './functionValidator.ts'
 import type { CType, Expression } from '../parser/index.ts'
 import { STDModule } from './modules.ts'
+import Parser from '../parser/index.ts'
 
 interface FunctionDefinition {
   name: string
   returnType: CType
-  args: {
-    type: CType[]
-    variadic?: boolean
-    optional?: boolean
-  }[]
+  args: FunctionArg[]
   module: STDModule
 }
 
@@ -34,47 +31,9 @@ export default class Functions {
     parser: Parser
   ): FunctionDefinition | never {
     const fn = this.functions.get(name)
-    if (!fn) return parser.throwError(parser.cur, `${name} is not a function`)
+    if (!fn) parser.throwError(parser.cur, `${name} is not a function`)
 
-    const argTypes = args.map(arg => arg.cType)
-    const expected = fn.args
-
-    const isVariadic = expected.at(-1)?.variadic ?? false
-    const requiredArgsCount = expected.filter(arg => !arg.optional).length
-
-    if (args.length < requiredArgsCount) {
-      return parser.throwError(
-        parser.cur,
-        `${name} expects at least ${requiredArgsCount} argument(s), got ${args.length}`
-      )
-    }
-
-    if (!isVariadic && args.length > expected.length) {
-      return parser.throwError(
-        parser.cur,
-        `${name} expects at most ${expected.length} argument(s), got ${args.length}`
-      )
-    }
-
-    for (let i = 0; i < args.length; i++) {
-      const expectedArg = expected[i] || expected[expected.length - 1]
-      const expectedTypes = expectedArg.type
-
-      if (!expectedTypes.includes(argTypes[i])) {
-        const literal = (parseTokenAsLiteral(args[i].token) || args[i].token.literal).toString()
-        return parser.throwError(
-          {
-            column: parser.cur.column - literal.length - args[i].token.literal.length + 1,
-            line: parser.cur.line,
-            literal,
-            type: parser.cur.type
-          },
-          `Argument ${i + 1} of ${name} must be ${expectedTypes
-            .map(CTypeToHuman)
-            .join(' or ')}, got ${CTypeToHuman(argTypes[i])}`
-        )
-      }
-    }
+    FunctionValidator.validateCall(name, args, fn.args, parser, parser.cur)
 
     return fn
   }
@@ -101,20 +60,6 @@ Functions.register({
 Functions.register({
   name: 'strlen',
   returnType: 'IntegerLiteral',
-  args: [{ type: ['StringLiteral'] }],
-  module: STDModule.STRING
-})
-
-Functions.register({
-  name: 'to_lower',
-  returnType: 'StringLiteral',
-  args: [{ type: ['StringLiteral'] }],
-  module: STDModule.STRING
-})
-
-Functions.register({
-  name: 'to_upper',
-  returnType: 'StringLiteral',
   args: [{ type: ['StringLiteral'] }],
   module: STDModule.STRING
 })
