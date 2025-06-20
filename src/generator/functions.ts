@@ -119,6 +119,13 @@ Functions.register({
   module: STDModule.STRING
 })
 
+Functions.register({
+  name: 'to_string',
+  returnType: 'StringLiteral',
+  args: [{ type: ['IntegerLiteral', 'BooleanLiteral'] }],
+  module: STDModule.STRING
+})
+
 // === MATH ===
 
 Functions.register({
@@ -132,5 +139,19 @@ Functions.register({
   name: 'pow',
   returnType: 'IntegerLiteral',
   args: [{ type: ['IntegerLiteral'] }, { type: ['IntegerLiteral'] }],
+  module: STDModule.MATH
+})
+
+Functions.register({
+  name: 'max',
+  returnType: 'IntegerLiteral',
+  args: [{ type: ['IntegerLiteral'], variadic: true }],
+  module: STDModule.MATH
+})
+
+Functions.register({
+  name: 'min',
+  returnType: 'IntegerLiteral',
+  args: [{ type: ['IntegerLiteral'], variadic: true }],
   module: STDModule.MATH
 })
