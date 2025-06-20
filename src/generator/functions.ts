@@ -80,6 +80,8 @@ export default class Functions {
   }
 }
 
+// === IO ===
+
 Functions.register({
   name: 'print',
   returnType: 'VoidLiteral',
@@ -94,12 +96,30 @@ Functions.register({
   module: STDModule.IO
 })
 
+// === STRING ===
+
 Functions.register({
   name: 'strlen',
   returnType: 'IntegerLiteral',
   args: [{ type: ['StringLiteral'] }],
   module: STDModule.STRING
 })
+
+Functions.register({
+  name: 'to_lower',
+  returnType: 'StringLiteral',
+  args: [{ type: ['StringLiteral'] }],
+  module: STDModule.STRING
+})
+
+Functions.register({
+  name: 'to_upper',
+  returnType: 'StringLiteral',
+  args: [{ type: ['StringLiteral'] }],
+  module: STDModule.STRING
+})
+
+// === MATH ===
 
 Functions.register({
   name: 'sqrt',
