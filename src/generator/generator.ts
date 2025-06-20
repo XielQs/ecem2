@@ -14,14 +14,9 @@ import type {
   StringLiteral,
   ImportStatement
 } from '../parser/index.ts'
-import {
-  CTypeToCode,
-  parseBoolean,
-  parseIdentifier,
-  parseInteger,
-  parseString
-} from '../parser/index.ts'
+import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
 import type Parser from '../parser/index.ts'
+import { CTypeToCode } from './index.ts'
 import Functions from './functions.ts'
 
 export default class CodeGenerator {

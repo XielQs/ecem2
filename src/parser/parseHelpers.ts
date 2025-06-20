@@ -76,21 +76,6 @@ export function CTypeToHuman(cType: CType | null): string {
   }
 }
 
-export function CTypeToCode(cType: CType): string {
-  switch (cType) {
-    case 'IntegerLiteral':
-      return 'int'
-    case 'StringLiteral':
-      return 'string'
-    case 'BooleanLiteral':
-      return 'bool'
-    case 'VoidLiteral':
-      return 'void'
-    default:
-      throw new Error(`Unknown CType: ${cType}`)
-  }
-}
-
 export function parseIdentifier(node: Identifier): string {
   return node.value
 }
