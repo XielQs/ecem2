@@ -394,9 +394,13 @@ export default class Parser {
       }
 
       if (leftType !== rightType) {
+        const convertInfo =
+          leftType === 'StringLiteral' || rightType === 'StringLiteral'
+            ? ', consider using to_string()'
+            : ''
         this.throwError(
           operatorToken,
-          `Cannot operate on ${CTypeToHuman(leftType)} and ${CTypeToHuman(rightType)}`
+          `Cannot operate on ${CTypeToHuman(leftType)} and ${CTypeToHuman(rightType)}${convertInfo}`
         )
       }
 
