@@ -95,7 +95,7 @@ Functions.register({
 })
 
 Functions.register({
-  name: 'len',
+  name: 'strlen',
   returnType: 'IntegerLiteral',
   args: [{ type: ['StringLiteral'] }],
   module: STDModule.STRING

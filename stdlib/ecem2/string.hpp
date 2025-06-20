@@ -2,7 +2,7 @@
 #include <string>
 
 namespace ecem2 {
-inline int len(const std::string &str)
+inline int strlen(const std::string &str)
 {
     return static_cast<int>(str.length());
 }
