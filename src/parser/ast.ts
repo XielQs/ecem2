@@ -92,4 +92,25 @@ export interface CallExpression<A extends Expression = Expression> extends BaseN
   args: A[]
 }
 
-export type Expression = Literal | InfixExpression | CallExpression
+export interface MemberExpression {
+  type: 'MemberExpression'
+  object: Expression
+  property: Identifier
+  token: Token
+  cType: CType
+}
+
+export interface MethodCallExpression {
+  type: 'MethodCallExpression'
+  callee: MemberExpression
+  args: Expression[]
+  token: Token
+  cType: CType
+}
+
+export type Expression =
+  | Literal
+  | InfixExpression
+  | CallExpression
+  | MemberExpression
+  | MethodCallExpression

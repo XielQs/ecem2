@@ -12,9 +12,11 @@ import type {
   VoidLiteral,
   Program,
   StringLiteral,
-  ImportStatement
+  ImportStatement,
+  MethodCallExpression
 } from '../parser/index.ts'
 import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
+import LiteralMethods from './literalMethods.ts'
 import type Parser from '../parser/index.ts'
 import { CTypeToCode } from './index.ts'
 import Functions from './functions.ts'
@@ -50,11 +52,12 @@ export default class CodeGenerator {
       BooleanLiteral: BooleanLiteral
       VoidLiteral: VoidLiteral
       LetStatement: LetStatement
-      InfixExpression: InfixExpression
       AssignmentStatement: AssignmentStatement
       ExpressionStatement: ExpressionStatement
       ImportStatement: ImportStatement
+      InfixExpression: InfixExpression
       CallExpression: CallExpression
+      MethodCallExpression: MethodCallExpression
     }
 
     const typeMap: {
@@ -67,18 +70,19 @@ export default class CodeGenerator {
       BooleanLiteral: this.visitBooleanLiteral,
       VoidLiteral: this.visitVoidLiteral,
       LetStatement: this.visitLetStatement,
-      InfixExpression: this.visitInfixExpression,
       AssignmentStatement: this.visitAssignmentStatement,
       ExpressionStatement: this.visitExpressionStatement,
       ImportStatement: this.visitImportStatement,
-      CallExpression: this.visitCallExpression
+      InfixExpression: this.visitInfixExpression,
+      CallExpression: this.visitCallExpression,
+      MethodCallExpression: this.visitMethodCallExpression
+    }
+    if (node.type === 'MemberExpression') {
+      throw new Error('MemberExpression is not supported in this generator')
     }
     const visitFn = typeMap[node.type] as (node: TypeMap[keyof TypeMap]) => void
-    if (visitFn) {
-      visitFn.bind(this, node)()
-    } else {
-      throw new Error(`No visit method for node type: ${node.type}`)
-    }
+    if (visitFn) visitFn.bind(this, node)()
+    else throw new Error(`No visit method for node type: ${node.type}`)
   }
 
   private addHeader(header: string): void {
@@ -126,6 +130,21 @@ export default class CodeGenerator {
           throw new Error(`Function ${expression.callee.value} is not defined`)
         }
         return CTypeToCode(func.returnType)
+      case 'MethodCallExpression':
+        const method = LiteralMethods.get(
+          expression.callee.object.cType,
+          expression.callee.property.value
+        )
+        if (!method) {
+          throw new Error(
+            `${expression.callee.property.value} is not a method of ${CTypeToCode(
+              expression.callee.object.cType
+            )}`
+          )
+        }
+        return CTypeToCode(method.returnType)
+      case 'MemberExpression':
+        throw new Error('MemberExpression is not supported in this generator')
       default:
         // @ts-expect-error = this is a type guard
         throw new Error(`Unsupported expression type: ${expression.type}`)
@@ -199,6 +218,31 @@ export default class CodeGenerator {
     }
 
     this.out += `ecem2::${funcName}(`
+    for (let i = 0; i < node.args.length; i++) {
+      this.visit(node.args[i])
+      if (i < node.args.length - 1) {
+        this.out += ', '
+      }
+    }
+    this.out += ')'
+  }
+
+  private visitMethodCallExpression(node: MethodCallExpression): void {
+    const methodName = node.callee.property.value
+    const literalType = node.callee.object.cType
+    if (!literalType) {
+      throw new Error(`Cannot determine type for object: ${node.callee.object.type}`)
+    }
+
+    if (!LiteralMethods.has(literalType, methodName)) {
+      throw new Error(`${methodName} is not a method of ${CTypeToCode(literalType)}`)
+    }
+
+    this.addHeader(`<ecem2/${literalType}/${methodName}.hpp>`)
+
+    this.out += `ecem2::${literalType}::${methodName}(`
+    this.visit(node.callee.object)
+
     for (let i = 0; i < node.args.length; i++) {
       this.visit(node.args[i])
       if (i < node.args.length - 1) {

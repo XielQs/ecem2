@@ -15,6 +15,7 @@ import {
   type Program,
   type Statement
 } from './index.ts'
+import LiteralMethods from '../generator/literalMethods.ts'
 import { type Token, TokenType } from './token.ts'
 import Functions from '../generator/functions.ts'
 import { STDModule } from '../generator/index.ts'
@@ -329,6 +330,21 @@ export default class Parser {
     }
   }
 
+  private getNodeCType(node: Expression): CType | undefined {
+    if (node.type === 'InfixExpression') return node.cType || null
+    if (node.type === 'Identifier') {
+      const ref = this.identifiers[node.value]
+      return ref.expression.cType ?? 'VoidLiteral'
+    }
+    if (node.type === 'CallExpression' || node.type === 'MethodCallExpression') {
+      return node.callee.cType || null
+    }
+    if (node.type === 'MemberExpression') {
+      this.throwError(node.token, `MemberExpression is not supported yet`)
+    }
+    return node.type
+  }
+
   private parseExpression(precedence = 0, identifier?: Identifier): Expression {
     let left: Expression | null = null
 
@@ -341,7 +357,8 @@ export default class Parser {
           cType: null // will be set later
         }
 
-        return this.parseCallExpression(identifier)
+        const call = this.parseCallExpression(identifier)
+        return this.parseMemberAndMethodCalls(call)
       } else {
         left = this.parseLiteral(this.cur, null)
       }
@@ -355,16 +372,6 @@ export default class Parser {
 
     if (left.type === 'Identifier' && !this.identifiers[left.value].referenced) {
       this.identifiers[left.value].referenced = true
-    }
-
-    const getNodeCType = (node: Expression): CType | undefined => {
-      if (node.type === 'InfixExpression') return node.cType || null
-      if (node.type === 'Identifier') {
-        const ref = this.identifiers[node.value]
-        return ref.expression.cType ?? 'VoidLiteral'
-      }
-      if (node.type === 'CallExpression') return node.callee.cType || null
-      return node.type
     }
 
     while (
@@ -399,8 +406,8 @@ export default class Parser {
 
       const right = this.parseExpression(opPrecedence)
 
-      const leftType = getNodeCType(left)
-      const rightType = getNodeCType(right)
+      const leftType = this.getNodeCType(left)
+      const rightType = this.getNodeCType(right)
 
       if (!leftType || !rightType) {
         this.throwError(
@@ -448,28 +455,112 @@ export default class Parser {
       } satisfies InfixExpression
     }
 
+    left = this.parseMemberAndMethodCalls(left)
+
+    return left
+  }
+
+  private parseCallArguments(): Expression[] {
+    this.expectPeek(TokenType.LPAREN)
+
+    const args: Expression[] = []
+
+    if (this.peek.type !== TokenType.RPAREN) {
+      this.nextToken() // consume LPAREN
+      args.push(this.parseExpression(0))
+
+      while (this.peek.type === TokenType.COMMA) {
+        this.nextToken() // consume COMMA
+        this.nextToken() // consume next expression
+        args.push(this.parseExpression(0))
+      }
+    }
+
+    this.expectPeek(TokenType.RPAREN)
+
+    return args
+  }
+
+  private parseMemberAndMethodCalls(left: Expression): Expression {
+    while (this.peek.type === TokenType.DOT) {
+      this.nextToken() // consume DOT
+
+      const propertyToken = this.peek
+      if (propertyToken.type !== TokenType.IDENTIFIER) {
+        this.throwError(propertyToken, `Expected identifier after . got ${propertyToken.type}`)
+      }
+
+      this.nextToken() // consume property identifier
+      this.peek = this.peek // i hate typescript...
+
+      const objectCType = this.getNodeCType(left)
+      if (!objectCType) {
+        this.throwError(
+          propertyToken,
+          `Cannot determine type of object in member expression, expected a valid type but got ${left.type}`
+        )
+      }
+
+      const methodName = this.cur.literal
+      const isCall = this.peek.type === TokenType.LPAREN
+
+      const property: Identifier = {
+        type: 'Identifier',
+        value: methodName,
+        token: propertyToken,
+        cType: null // will be set later
+      }
+
+      if (isCall) {
+        const args = this.parseCallArguments()
+
+        const method = LiteralMethods.get(objectCType, methodName)
+        if (!method) {
+          return this.throwError(
+            propertyToken,
+            `${CTypeToHuman(objectCType)} has no method called ${methodName}`
+          )
+        }
+
+        LiteralMethods.validateCall(objectCType, methodName, args, this)
+
+        property.cType = method.returnType
+
+        left = {
+          type: 'MethodCallExpression',
+          callee: {
+            type: 'MemberExpression',
+            object: left!,
+            property,
+            token: propertyToken,
+            cType: method.returnType
+          },
+          args,
+          token: propertyToken,
+          cType: method.returnType
+        }
+      } else {
+        // property access
+        this.throwError(
+          propertyToken,
+          `Property access is not supported yet for ${CTypeToHuman(objectCType)}`
+        )
+        // left = {
+        //   type: 'MemberExpression',
+        //   object: left!,
+        //   property,
+        //   token: propertyToken,
+        //   cType: property.cType
+        // }
+      }
+    }
     return left
   }
 
   private parseCallExpression(callee: Identifier): CallExpression {
     const cur = this.cur
 
-    this.expectPeek(TokenType.LPAREN)
-
-    const args: Expression[] = []
-
-    if (this.peek.type !== TokenType.RPAREN) {
-      this.nextToken()
-      args.push(this.parseExpression(0))
-
-      while (this.peek.type === TokenType.COMMA) {
-        this.nextToken()
-        this.nextToken()
-        args.push(this.parseExpression(0))
-      }
-    }
-
-    this.expectPeek(TokenType.RPAREN)
+    const args = this.parseCallArguments()
 
     const fn = Functions.get(cur.literal)
 
