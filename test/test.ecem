@@ -1,6 +1,13 @@
 import <string>
+import <math>
 import <io>
 
-let x = 5
+let x = 16
 
-print(len("Hello, world!"))
+print("The square root of", x, "is", sqrt(x))
+print("The power of", x, "to 2 is", pow(x, 2))
+print("The length of the string 'Hello, world!' is", len("Hello, world!"))
+
+let y = input("Enter a number: ")
+
+print("You entered:", y)

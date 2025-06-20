@@ -77,8 +77,29 @@ Functions.register({
 })
 
 Functions.register({
+  name: 'input',
+  returnType: 'StringLiteral',
+  args: [{ type: ['StringLiteral'] }],
+  module: STDModule.IO
+})
+
+Functions.register({
   name: 'len',
   returnType: 'IntegerLiteral',
   args: [{ type: ['StringLiteral'] }],
   module: STDModule.STRING
+})
+
+Functions.register({
+  name: 'sqrt',
+  returnType: 'IntegerLiteral',
+  args: [{ type: ['IntegerLiteral'] }],
+  module: STDModule.MATH
+})
+
+Functions.register({
+  name: 'pow',
+  returnType: 'IntegerLiteral',
+  args: [{ type: ['IntegerLiteral'] }, { type: ['IntegerLiteral'] }],
+  module: STDModule.MATH
 })
