@@ -217,6 +217,10 @@ export default class Lexer {
         token.type = TokenType.COMMA
         token.literal = ','
         break
+      case '.':
+        token.type = TokenType.DOT
+        token.literal = '.'
+        break
       case '(':
         token.type = TokenType.LPAREN
         token.literal = '('
