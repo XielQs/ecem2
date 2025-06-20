@@ -25,7 +25,8 @@ export enum TokenType {
   LT_EQ = '<=',
   GT_EQ = '>=',
 
-  COMMA = '.',
+  COMMA = ',',
+  DOT = '.',
   SEMICOLON = ';',
   COLON = ':',
 
