@@ -57,7 +57,7 @@ export default class Parser {
     if (this.peek.type === type) {
       this.nextToken()
     } else {
-      this.throwError(this.peek, `Unexpected token ${this.peek.type}, ${type} expected`)
+      this.throwError(this.peek, `Unexpected token ${this.peek.type} expected ${type}`)
     }
   }
 
