@@ -40,7 +40,7 @@ describe('Functions', () => {
     })
     const code = 'import <test>\nlet result = add(1, 2, 3)'
     const parser = new Parser(new Lexer(code, 'test'))
-    expectPanic(() => parser.parseProgram(), 'add expects 2 argument(s), got 3')
+    expectPanic(() => parser.parseProgram(), 'add expects at most 2 argument(s), got 3')
   })
 
   it('throws error on function call with missing arguments', () => {
@@ -52,6 +52,6 @@ describe('Functions', () => {
     })
     const code = 'import <test>\nlet result = concat("Hello")'
     const parser = new Parser(new Lexer(code, 'test'))
-    expectPanic(() => parser.parseProgram(), 'concat expects 2 argument(s), got 1')
+    expectPanic(() => parser.parseProgram(), 'concat expects at least 2 argument(s), got 1')
   })
 })

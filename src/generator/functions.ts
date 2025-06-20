@@ -8,6 +8,7 @@ type FunctionDefinition = {
   args: {
     type: CType[]
     variadic?: boolean
+    optional?: boolean
   }[]
   module: STDModule
 }
@@ -38,18 +39,28 @@ export default class Functions {
     const argTypes = args.map(arg => arg.cType)
     const expected = fn.args
 
-    const isVariadic = expected.at(-1)?.variadic
+    const isVariadic = expected.at(-1)?.variadic ?? false
+    const requiredArgsCount = expected.filter(arg => !arg.optional).length
 
-    if (!isVariadic && args.length !== expected.length) {
+    if (args.length < requiredArgsCount) {
       return parser.throwError(
         parser.cur,
-        `${name} expects ${expected.length} argument(s), got ${args.length}`
+        `${name} expects at least ${requiredArgsCount} argument(s), got ${args.length}`
+      )
+    }
+
+    if (!isVariadic && args.length > expected.length) {
+      return parser.throwError(
+        parser.cur,
+        `${name} expects at most ${expected.length} argument(s), got ${args.length}`
       )
     }
 
     for (let i = 0; i < args.length; i++) {
-      const expectedType = expected[i]?.type || (isVariadic ? expected.at(-1)?.type : null)
-      if (!expectedType || !expectedType.includes(argTypes[i])) {
+      const expectedArg = expected[i] || expected[expected.length - 1]
+      const expectedTypes = expectedArg.type
+
+      if (!expectedTypes.includes(argTypes[i])) {
         const literal = (parseTokenAsLiteral(args[i].token) || args[i].token.literal).toString()
         return parser.throwError(
           {
@@ -58,7 +69,7 @@ export default class Functions {
             literal,
             type: parser.cur.type
           },
-          `Argument ${i + 1} of ${name} must be ${expectedType
+          `Argument ${i + 1} of ${name} must be ${expectedTypes
             .map(CTypeToHuman)
             .join(' or ')}, got ${CTypeToHuman(argTypes[i])}`
         )
@@ -79,7 +90,7 @@ Functions.register({
 Functions.register({
   name: 'input',
   returnType: 'StringLiteral',
-  args: [{ type: ['StringLiteral'] }],
+  args: [{ type: ['StringLiteral'], optional: true }],
   module: STDModule.IO
 })
 
