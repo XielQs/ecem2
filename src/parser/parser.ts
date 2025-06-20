@@ -21,10 +21,16 @@ import { STDModule } from '../generator/index.ts'
 import { handleError } from '../common.ts'
 import Lexer from '../lexer.ts'
 
-type IdentifierInfo = {
+interface IdentifierInfo {
   expression: Expression
   referenced: boolean
   declaredAt: Token
+}
+
+interface ImportInfo {
+  name: STDModule
+  token: Token
+  used: boolean
 }
 
 export default class Parser {
@@ -32,7 +38,7 @@ export default class Parser {
   public cur: Token
   public peek: Token
   public identifiers: Record<string, IdentifierInfo> = {}
-  public imports: Set<STDModule> = new Set()
+  public imports: Map<STDModule, ImportInfo> = new Map()
 
   public constructor(lexer: Lexer) {
     this.lexer = lexer
@@ -145,6 +151,16 @@ export default class Parser {
     for (const [name, info] of Object.entries(this.identifiers)) {
       if (!info.referenced) {
         this.throwWarning(info.declaredAt, `Identifier ${name} is declared but never used`)
+      }
+    }
+
+    // check for unused imports
+    for (const [name, info] of this.imports.entries()) {
+      if (!info.used) {
+        this.throwWarning(info.token, `Module <${name}> is imported but never used`, {
+          carets: name.length + 2, // +2 for the < and >
+          spaces: info.token.column - 2
+        })
       }
     }
 
@@ -470,6 +486,9 @@ export default class Parser {
 
     Functions.validateCall(fn.name, args, this)
 
+    // make import used
+    this.imports.get(fn.module)!.used = true
+
     callee.cType = fn.returnType
 
     return {
@@ -485,23 +504,28 @@ export default class Parser {
     this.expectPeek(TokenType.LT)
     const start = this.cur
     this.nextToken()
+    const stmt = this.cur
 
-    const name = this.cur.literal as STDModule
+    const name = stmt.literal as STDModule
     this.expectPeek(TokenType.GT)
 
     if (!Object.values(STDModule).includes(name)) {
-      this.throwError(start, `Unknown module ${name}`, {
+      this.throwError(start, `Unknown module <${name}>`, {
         carets: name.length + 2 // +2 for the < and >
       })
     }
     this.nextToken()
 
-    this.imports.add(name)
+    this.imports.set(name, {
+      name,
+      token: stmt,
+      used: false
+    })
 
     return {
       type: 'ImportStatement',
       name,
-      token: this.cur
+      token: stmt
     }
   }
 }
