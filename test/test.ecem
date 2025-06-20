@@ -8,4 +8,4 @@ print("The square root of", x, "is", sqrt(x))
 print("The power of", x, "to 2 is", pow(x, 2))
 print("The length of the string 'Hello, world!' is", strlen("Hello, world!"))
 
-print("You entered in upper case:", to_upper(input("Enter a string: ")))
+print("You entered in upper case:", input("Enter a string: ").upper())
