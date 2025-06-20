@@ -266,14 +266,25 @@ export default class Parser {
       token: this.cur,
       cType: null
     }
+    const identifier = this.identifiers[name.value]
 
-    if (!this.identifiers[name.value]) {
+    if (!identifier) {
       this.throwError(this.cur, `Identifier ${name.value} is not declared`)
     }
 
     this.expectPeek(TokenType.ASSIGN)
     this.nextToken()
     const value = this.parseExpression(0)
+
+    if (identifier.expression.cType !== value.cType) {
+      this.throwError(
+        this.cur,
+        `Cannot assign value of type ${CTypeToHuman(value.cType)} to identifier ${
+          name.value
+        } of type ${CTypeToHuman(identifier.expression.cType)}`
+      )
+    }
+    this.nextToken() // consume the value
 
     this.identifiers[name.value] = {
       expression: value,
