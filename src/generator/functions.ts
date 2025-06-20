@@ -2,7 +2,7 @@ import Parser, { CTypeToHuman, parseTokenAsLiteral } from '../parser/index.ts'
 import type { CType, Expression } from '../parser/index.ts'
 import { STDModule } from './modules.ts'
 
-type FunctionDefinition = {
+interface FunctionDefinition {
   name: string
   returnType: CType
   args: {

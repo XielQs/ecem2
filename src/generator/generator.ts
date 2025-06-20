@@ -42,7 +42,7 @@ export default class CodeGenerator {
   }
 
   private visit(node: ASTNode): void {
-    type TypeMap = {
+    interface TypeMap {
       Program: Program
       Identifier: Identifier
       IntegerLiteral: IntegerLiteral
