@@ -126,6 +126,27 @@ Functions.register({
   module: STDModule.STRING
 })
 
+Functions.register({
+  name: 'starts_with',
+  returnType: 'BooleanLiteral',
+  args: [{ type: ['StringLiteral'] }, { type: ['StringLiteral'] }],
+  module: STDModule.STRING
+})
+
+Functions.register({
+  name: 'ends_with',
+  returnType: 'BooleanLiteral',
+  args: [{ type: ['StringLiteral'] }, { type: ['StringLiteral'] }],
+  module: STDModule.STRING
+})
+
+Functions.register({
+  name: 'contains',
+  returnType: 'BooleanLiteral',
+  args: [{ type: ['StringLiteral'] }, { type: ['StringLiteral'] }],
+  module: STDModule.STRING
+})
+
 // === MATH ===
 
 Functions.register({
