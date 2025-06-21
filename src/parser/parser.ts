@@ -15,6 +15,7 @@ import {
   type Program,
   type Statement
 } from './index.ts'
+import LiteralProperties from '../generator/literalProperties.ts'
 import LiteralMethods from '../generator/literalMethods.ts'
 import { type Token, TokenType } from './token.ts'
 import Functions from '../generator/functions.ts'
@@ -339,9 +340,7 @@ export default class Parser {
     if (node.type === 'CallExpression' || node.type === 'MethodCallExpression') {
       return node.callee.cType || null
     }
-    if (node.type === 'MemberExpression') {
-      this.throwError(node.token, `MemberExpression is not supported yet`)
-    }
+    if (node.type === 'MemberExpression') return node.property.cType || null
     return node.type
   }
 
@@ -516,9 +515,12 @@ export default class Parser {
 
         const method = LiteralMethods.get(objectCType, methodName)
         if (!method) {
+          const isProperty = LiteralProperties.has(objectCType, methodName)
           return this.throwError(
             propertyToken,
-            `${CTypeToHuman(objectCType)} has no method called ${methodName}`
+            `${CTypeToHuman(objectCType)} has no method called ${methodName}${
+              isProperty ? ', did you mean to use it as a property?' : ''
+            }`
           )
         }
 
@@ -540,18 +542,26 @@ export default class Parser {
           cType: method.returnType
         }
       } else {
-        // property access
-        this.throwError(
-          propertyToken,
-          `Property access is not supported yet for ${CTypeToHuman(objectCType)}`
-        )
-        // left = {
-        //   type: 'MemberExpression',
-        //   object: left!,
-        //   property,
-        //   token: propertyToken,
-        //   cType: property.cType
-        // }
+        const propertyInfo = LiteralProperties.get(objectCType, methodName)
+        if (!propertyInfo) {
+          const isMethod = LiteralMethods.has(objectCType, methodName)
+          return this.throwError(
+            propertyToken,
+            `${CTypeToHuman(objectCType)} has no property called ${methodName}${
+              isMethod ? ', did you mean to use it as a method?' : ''
+            }`
+          )
+        }
+
+        property.cType = propertyInfo.returnType
+
+        left = {
+          type: 'MemberExpression',
+          object: left!,
+          property,
+          token: propertyToken,
+          cType: property.cType
+        }
       }
     }
     return left

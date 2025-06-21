@@ -13,9 +13,11 @@ import type {
   Program,
   StringLiteral,
   ImportStatement,
-  MethodCallExpression
+  MethodCallExpression,
+  MemberExpression
 } from '../parser/index.ts'
 import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
+import LiteralProperties from './literalProperties.ts'
 import LiteralMethods from './literalMethods.ts'
 import type Parser from '../parser/index.ts'
 import { CTypeToCode } from './index.ts'
@@ -58,6 +60,7 @@ export default class CodeGenerator {
       InfixExpression: InfixExpression
       CallExpression: CallExpression
       MethodCallExpression: MethodCallExpression
+      MemberExpression: MemberExpression
     }
 
     const typeMap: {
@@ -75,10 +78,8 @@ export default class CodeGenerator {
       ImportStatement: this.visitImportStatement,
       InfixExpression: this.visitInfixExpression,
       CallExpression: this.visitCallExpression,
-      MethodCallExpression: this.visitMethodCallExpression
-    }
-    if (node.type === 'MemberExpression') {
-      throw new Error('MemberExpression is not supported in this generator')
+      MethodCallExpression: this.visitMethodCallExpression,
+      MemberExpression: this.visitMemberExpression
     }
     const visitFn = typeMap[node.type] as (node: TypeMap[keyof TypeMap]) => void
     if (visitFn) visitFn.bind(this, node)()
@@ -93,7 +94,7 @@ export default class CodeGenerator {
     if (this.out.endsWith(';')) return
     if (this.out.endsWith('\n')) {
       if (this.out.at(-2) === ';') return
-      this.out = this.out.slice(0, -1) // Remove the last newline
+      this.out = this.out.slice(0, -1) // remove the last newline
     }
     this.out += ';\n'
   }
@@ -144,7 +145,15 @@ export default class CodeGenerator {
         }
         return CTypeToCode(method.returnType)
       case 'MemberExpression':
-        throw new Error('MemberExpression is not supported in this generator')
+        const property = LiteralProperties.get(expression.object.cType, expression.property.value)
+        if (!property) {
+          throw new Error(
+            `${expression.property.value} is not a property of ${CTypeToCode(
+              expression.object.cType
+            )}`
+          )
+        }
+        return CTypeToCode(property.returnType)
       default:
         // @ts-expect-error = this is a type guard
         throw new Error(`Unsupported expression type: ${expression.type}`)
@@ -235,10 +244,10 @@ export default class CodeGenerator {
     }
 
     if (!LiteralMethods.has(literalType, methodName)) {
-      throw new Error(`${methodName} is not a method of ${CTypeToCode(literalType)}`)
+      throw new Error(`${methodName} is not a method of ${literalType}`)
     }
 
-    this.addHeader(`<ecem2/${literalType}/${methodName}.hpp>`)
+    this.addHeader(`<ecem2/${literalType}/methods/${methodName}.hpp>`)
 
     this.out += `ecem2::${literalType}::${methodName}(`
     this.visit(node.callee.object)
@@ -249,6 +258,24 @@ export default class CodeGenerator {
         this.out += ', '
       }
     }
+    this.out += ')'
+  }
+
+  private visitMemberExpression(node: MemberExpression): void {
+    const propertyName = node.property.value
+    const literalType = node.object.cType
+    if (!literalType) {
+      throw new Error(`Cannot determine type for property: ${node.property.type}`)
+    }
+
+    if (!LiteralProperties.has(literalType, propertyName)) {
+      throw new Error(`${propertyName} is not a property of ${literalType}`)
+    }
+
+    this.addHeader(`<ecem2/${literalType}/properties/${propertyName}.hpp>`)
+
+    this.out += `ecem2::${literalType}::${propertyName}(`
+    this.visit(node.object)
     this.out += ')'
   }
 }
