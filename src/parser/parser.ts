@@ -15,7 +15,7 @@ import {
   type Program,
   type Statement
 } from './index.ts'
-import LiteralProperties from '../generator/literalProperties.ts'
+import LiteralProperties from '../generator/literal-properties.ts'
 import LiteralMethods from '../generator/literal-methods.ts'
 import { type Token, TokenType } from './token.ts'
 import Functions from '../generator/functions.ts'

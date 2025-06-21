@@ -17,7 +17,7 @@ import type {
   MemberExpression
 } from '../parser/index.ts'
 import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
-import LiteralProperties from './literalProperties.ts'
+import LiteralProperties from './literal-properties.ts'
 import LiteralMethods from './literal-methods.ts'
 import type Parser from '../parser/index.ts'
 import { CTypeToCode } from './index.ts'
