@@ -1,4 +1,4 @@
-import FunctionValidator, { type FunctionArg } from './functionValidator.ts'
+import FunctionValidator, { type FunctionArg } from './function-validator.ts'
 import type { CType, Expression } from '../parser/index.ts'
 import { STDModule } from './modules.ts'
 import Parser from '../parser/index.ts'

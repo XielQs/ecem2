@@ -1,5 +1,5 @@
 import { CTypeToHuman, type CType, type Expression } from '../parser/index.ts'
-import FunctionValidator, { type FunctionArg } from './functionValidator.ts'
+import FunctionValidator, { type FunctionArg } from './function-validator.ts'
 import type Parser from '../parser/parser.ts'
 
 interface LiteralMethod {
