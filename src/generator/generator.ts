@@ -18,7 +18,7 @@ import type {
 } from '../parser/index.ts'
 import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
 import LiteralProperties from './literalProperties.ts'
-import LiteralMethods from './literalMethods.ts'
+import LiteralMethods from './literal-methods.ts'
 import type Parser from '../parser/index.ts'
 import { CTypeToCode } from './index.ts'
 import Functions from './functions.ts'
