@@ -1,4 +1,4 @@
-import { parseTokenAsLiteral, CTypeToHuman } from '../parser/parseHelpers.ts'
+import { parseTokenAsLiteral, CTypeToHuman } from '../parser/parse-helpers.ts'
 import type { CType, Expression } from '../parser/index.ts'
 import type { Token } from '../parser/token.ts'
 import type Parser from '../parser/parser.ts'
