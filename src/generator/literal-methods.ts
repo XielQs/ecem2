@@ -11,7 +11,7 @@ interface LiteralMethod {
 type MethodMap = Map<string, LiteralMethod>
 
 export default class LiteralMethods {
-  private static methods: Map<CType, MethodMap> = new Map()
+  private static methods = new Map<CType, MethodMap>()
 
   static register(literalType: CType, method: LiteralMethod) {
     if (!this.methods.has(literalType)) {

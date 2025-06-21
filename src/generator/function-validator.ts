@@ -41,7 +41,7 @@ export default class FunctionValidator {
       const expectedTypes = expectedArg.type
 
       if (!expectedTypes.includes(actualType)) {
-        const lit = (parseTokenAsLiteral(arg.token) || arg.token.literal).toString()
+        const lit = (parseTokenAsLiteral(arg.token) ?? arg.token.literal).toString()
         parser.throwError(
           {
             column: token.column - lit.length - arg.token.literal.length + 1,

@@ -11,7 +11,7 @@ interface FunctionDefinition {
 }
 
 export default class Functions {
-  private static functions: Map<string, FunctionDefinition> = new Map()
+  private static functions = new Map<string, FunctionDefinition>()
 
   static register(fn: FunctionDefinition) {
     this.functions.set(fn.name, fn)

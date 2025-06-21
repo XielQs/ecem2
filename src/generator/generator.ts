@@ -26,7 +26,7 @@ import Functions from './functions.ts'
 export default class CodeGenerator {
   private out = ''
   private readonly parser: Parser
-  private headers: Set<string> = new Set()
+  private headers = new Set<string>()
 
   constructor(parser: Parser) {
     this.parser = parser
@@ -125,13 +125,14 @@ export default class CodeGenerator {
         return this.parseExpressionType(this.parser.identifiers[expression.value].expression)
       case 'InfixExpression':
         return this.parseExpressionType(expression.left)
-      case 'CallExpression':
+      case 'CallExpression': {
         const func = Functions.get(expression.callee.value)
         if (!func) {
           throw new Error(`Function ${expression.callee.value} is not defined`)
         }
         return CTypeToCode(func.returnType)
-      case 'MethodCallExpression':
+      }
+      case 'MethodCallExpression': {
         const method = LiteralMethods.get(
           expression.callee.object.cType,
           expression.callee.property.value
@@ -144,7 +145,8 @@ export default class CodeGenerator {
           )
         }
         return CTypeToCode(method.returnType)
-      case 'MemberExpression':
+      }
+      case 'MemberExpression': {
         const property = LiteralProperties.get(expression.object.cType, expression.property.value)
         if (!property) {
           throw new Error(
@@ -154,6 +156,7 @@ export default class CodeGenerator {
           )
         }
         return CTypeToCode(property.returnType)
+      }
       default:
         // @ts-expect-error = this is a type guard
         throw new Error(`Unsupported expression type: ${expression.type}`)

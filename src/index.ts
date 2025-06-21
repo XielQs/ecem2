@@ -2,7 +2,7 @@ import { commandPath, readFile } from './common.ts'
 import ArgumentParser from './argument-parser.ts'
 import CodeGenerator from './generator/index.ts'
 import { writeFileSync, rmSync } from 'node:fs'
-import type { Token } from './parser/token.ts'
+import { TokenType, type Token } from './parser/token.ts'
 import { spawn } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import Parser from './parser/index.ts'
@@ -36,7 +36,7 @@ for (const [a, b] of conflicting_args) {
   }
 }
 
-function verbose(...message: any): void {
+function verbose(...message: unknown[]): void {
   if (args.getArgument('verbose')) console.log('[verbose]:', ...message)
 }
 
@@ -47,7 +47,7 @@ if (args.getArgument('no_parse')) {
   let token: Token | null = null
   while ((token = lexer.nextToken())) {
     console.log(token)
-    if (token.type === 'EOF') break
+    if (token.type === TokenType.END_OF_FILE) break
   }
   process.exit(0)
 }
@@ -78,7 +78,7 @@ if (!should_compile) {
   process.exit(0)
 }
 
-const compiler = commandPath(process.env.CXX) || commandPath('clang++') || commandPath('g++')
+const compiler = commandPath(process.env.CXX) ?? commandPath('clang++') ?? commandPath('g++')
 
 if (!compiler) {
   console.error('[error]: No C++ compiler found (CXX env, clang++, g++ tried)')

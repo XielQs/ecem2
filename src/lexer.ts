@@ -18,7 +18,7 @@ export default class Lexer {
   public readonly file_name: string
   private position = 0
   private read_position = 0
-  private ch: string = '\0'
+  private ch = '\0'
   private line = 0
   private column = 0
 
@@ -111,7 +111,7 @@ export default class Lexer {
   public nextToken(): Token {
     this.skipWhitespace()
 
-    let token: Token = {
+    const token: Token = {
       type: TokenType.ILLEGAL,
       literal: this.ch || '',
       line: this.line,

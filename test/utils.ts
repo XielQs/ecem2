@@ -5,14 +5,10 @@ export let exitSpy: Mock<typeof process.exit> | null = null
 export let isMonitored = false
 
 export function spy() {
-  if (!stderrSpy) {
-    stderrSpy = spyOn(process.stderr, 'write').mockImplementation(() => true)
-  }
-  if (!exitSpy) {
-    exitSpy = spyOn(process, 'exit').mockImplementation(() => {
-      throw new Error('exit')
-    })
-  }
+  stderrSpy ??= spyOn(process.stderr, 'write').mockImplementation(() => true)
+  exitSpy ??= spyOn(process, 'exit').mockImplementation(() => {
+    throw new Error('exit')
+  })
 }
 
 export function clearSpies() {

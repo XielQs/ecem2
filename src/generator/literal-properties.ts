@@ -8,7 +8,7 @@ interface LiteralProperty {
 type PropertyMap = Map<string, LiteralProperty>
 
 export default class LiteralProperties {
-  private static properties: Map<CType, PropertyMap> = new Map()
+  private static properties = new Map<CType, PropertyMap>()
 
   static register(literalType: CType, property: LiteralProperty) {
     if (!this.properties.has(literalType)) {

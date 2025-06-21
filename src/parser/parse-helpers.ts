@@ -72,7 +72,7 @@ export function CTypeToHuman(cType: CType | null): string {
     case 'VoidLiteral':
       return 'void'
     default:
-      return cType || 'unknown'
+      return cType ?? 'unknown'
   }
 }
 

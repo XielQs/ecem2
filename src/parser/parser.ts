@@ -40,7 +40,7 @@ export default class Parser {
   public cur: Token
   public peek: Token
   public identifiers: Record<string, IdentifierInfo> = {}
-  public imports: Map<STDModule, ImportInfo> = new Map()
+  public imports = new Map<STDModule, ImportInfo>()
 
   public constructor(lexer: Lexer) {
     this.lexer = lexer
@@ -85,7 +85,7 @@ export default class Parser {
       {
         column: token.column,
         line: token.line,
-        literal: (parseTokenAsLiteral(token) || token.literal).toString(),
+        literal: (parseTokenAsLiteral(token) ?? token.literal).toString(),
         type: token.type
       },
       this.lexer.source_code,
@@ -100,9 +100,9 @@ export default class Parser {
     custom_message?: string,
     custom_mark: { spaces?: number; carets?: number } = {}
   ): never {
-    const literal = (parseTokenAsLiteral(token) || token.literal).toString()
+    const literal = (parseTokenAsLiteral(token) ?? token.literal).toString()
     handleError(
-      custom_message ||
+      custom_message ??
         (token.type == TokenType.ILLEGAL
           ? 'Unexpected illegal token'
           : `Unexpected token ${token.type}`),
@@ -175,7 +175,7 @@ export default class Parser {
   private parseLiteral<T extends Identifier | null>(
     token: Token,
     identifier: T
-  ): T extends null ? Literal | null : Literal | never {
+  ): T extends null ? Literal | null : Literal {
     switch (token.type) {
       case TokenType.INT:
         return {
@@ -268,7 +268,7 @@ export default class Parser {
       referenced: false,
       declaredAt: name.token
     }
-    name.cType = value.cType || null
+    name.cType = value.cType ?? null
 
     return {
       type: 'LetStatement',
@@ -309,7 +309,7 @@ export default class Parser {
       referenced: false,
       declaredAt: name.token
     }
-    name.cType = value.cType || null
+    name.cType = value.cType ?? null
 
     return {
       type: 'AssignmentStatement',
@@ -327,20 +327,20 @@ export default class Parser {
       type: 'ExpressionStatement',
       expression,
       token: this.cur,
-      cType: expression.cType || null
+      cType: expression.cType ?? null
     }
   }
 
   private getNodeCType(node: Expression): CType | undefined {
-    if (node.type === 'InfixExpression') return node.cType || null
+    if (node.type === 'InfixExpression') return node.cType ?? null
     if (node.type === 'Identifier') {
       const ref = this.identifiers[node.value]
       return ref.expression.cType ?? 'VoidLiteral'
     }
     if (node.type === 'CallExpression' || node.type === 'MethodCallExpression') {
-      return node.callee.cType || null
+      return node.callee.cType ?? null
     }
-    if (node.type === 'MemberExpression') return node.property.cType || null
+    if (node.type === 'MemberExpression') return node.property.cType ?? null
     return node.type
   }
 
@@ -362,7 +362,7 @@ export default class Parser {
         left = this.parseLiteral(this.cur, null)
       }
     } else {
-      left = this.parseLiteral(this.cur, identifier || null)
+      left = this.parseLiteral(this.cur, identifier ?? null)
     }
 
     if (!left) {
@@ -389,7 +389,7 @@ export default class Parser {
           type: 'Identifier',
           value: this.cur.literal,
           token: this.cur,
-          cType: identifier.expression.cType || null
+          cType: identifier.expression.cType ?? null
         })
       }
 
@@ -532,7 +532,7 @@ export default class Parser {
           type: 'MethodCallExpression',
           callee: {
             type: 'MemberExpression',
-            object: left!,
+            object: left,
             property,
             token: propertyToken,
             cType: method.returnType
@@ -557,7 +557,7 @@ export default class Parser {
 
         left = {
           type: 'MemberExpression',
-          object: left!,
+          object: left,
           property,
           token: propertyToken,
           cType: property.cType
@@ -597,7 +597,7 @@ export default class Parser {
       token: callee.token,
       callee,
       args,
-      cType: fn.returnType || null
+      cType: fn.returnType ?? null
     }
   }
 

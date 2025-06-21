@@ -6,7 +6,7 @@ import fs from 'node:fs'
 export function readFile(file_path: string, retry: boolean): string {
   try {
     return fs.readFileSync(file_path, 'utf8')
-  } catch (error) {
+  } catch {
     if (retry && !file_path.endsWith(FILE_EXTENSION)) {
       return readFile(file_path + FILE_EXTENSION, false)
     }
