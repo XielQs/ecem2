@@ -4,8 +4,10 @@ import Parser, {
   type InfixExpression,
   type IntegerLiteral,
   type LetStatement,
+  type MethodCallExpression,
   type StringLiteral
 } from '../src/parser/index.ts'
+import LiteralMethods from '../src/generator/literal-methods.ts'
 import { STDModule } from '../src/generator/modules.ts'
 import Functions from '../src/generator/functions.ts'
 import { describe, it, expect } from 'bun:test'
@@ -197,5 +199,77 @@ describe('Parser', () => {
     expect(stmt.value.args[0].type).toBe('CallExpression')
     expect(stmt.value.args[0].callee.value).toBe('add')
     expect(stmt.value.args[0].args.length).toBe(2)
+  })
+
+  it('parses method call with no arguments', () => {
+    LiteralMethods.register('StringLiteral', {
+      name: 'testMethod',
+      returnType: 'StringLiteral',
+      args: []
+    })
+    const code = 'let s = "hello".testMethod()'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const stmt = program.body[0] as LetStatement<MethodCallExpression>
+    expect(stmt.value.type).toBe('MethodCallExpression')
+    expect(stmt.value.callee.property.value).toBe('testMethod')
+    expect(stmt.value.args.length).toBe(0)
+  })
+
+  it('parses method call with arguments', () => {
+    LiteralMethods.register('StringLiteral', {
+      name: 'testMethod',
+      returnType: 'StringLiteral',
+      args: [{ type: ['IntegerLiteral'] }]
+    })
+    const code = 'let s = "hello".testMethod(123)'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const stmt = program.body[0] as LetStatement<MethodCallExpression>
+    expect(stmt.value.type).toBe('MethodCallExpression')
+    expect(stmt.value.callee.property.value).toBe('testMethod')
+    expect(stmt.value.args.length).toBe(1)
+    expect((stmt.value.args[0] as IntegerLiteral).value).toBe(123)
+  })
+
+  it('parses nested method calls', () => {
+    LiteralMethods.register('StringLiteral', {
+      name: 'method1',
+      returnType: 'StringLiteral',
+      args: []
+    })
+    LiteralMethods.register('StringLiteral', {
+      name: 'method2',
+      returnType: 'StringLiteral',
+      args: []
+    })
+    const code = 'let s = "hello".method1().method2()'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const stmt = program.body[0] as LetStatement<MethodCallExpression<MethodCallExpression>>
+    expect(stmt.value.type).toBe('MethodCallExpression')
+    expect(stmt.value.callee.property.value).toBe('method2')
+    expect(stmt.value.callee.object.callee.property.value).toBe('method1')
+  })
+
+  it('parses nested function calls with method calls', () => {
+    Functions.register({
+      name: 'process',
+      args: [{ type: ['StringLiteral'] }],
+      returnType: 'IntegerLiteral',
+      module: TESTModule.TEST as unknown as STDModule
+    })
+    LiteralMethods.register('StringLiteral', {
+      name: 'upper',
+      returnType: 'StringLiteral',
+      args: []
+    })
+    const code = 'import <test>\nlet result = process("hello".upper())'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const stmt = program.body[1] as LetStatement<CallExpression<MethodCallExpression>>
+    expect(stmt.value.type).toBe('CallExpression')
+    expect(stmt.value.callee.value).toBe('process')
+    expect(stmt.value.args[0].callee.property.value).toBe('upper')
   })
 })
