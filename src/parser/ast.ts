@@ -92,20 +92,16 @@ export interface CallExpression<A extends Expression = Expression> extends BaseN
   args: A[]
 }
 
-export interface MemberExpression {
+export interface MemberExpression<O extends Expression = Expression> extends BaseNode {
   type: 'MemberExpression'
-  object: Expression
+  object: O
   property: Identifier
-  token: Token
-  cType: CType
 }
 
-export interface MethodCallExpression {
+export interface MethodCallExpression<O extends Expression = Expression> extends BaseNode {
   type: 'MethodCallExpression'
-  callee: MemberExpression
+  callee: MemberExpression<O>
   args: Expression[]
-  token: Token
-  cType: CType
 }
 
 export type Expression =
