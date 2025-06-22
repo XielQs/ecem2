@@ -58,13 +58,6 @@ Functions.register({
 // === STRING ===
 
 Functions.register({
-  name: 'strlen',
-  returnType: 'IntegerLiteral',
-  args: [{ type: ['StringLiteral'] }],
-  module: STDModule.STRING
-})
-
-Functions.register({
   name: 'to_string',
   returnType: 'StringLiteral',
   args: [{ type: ['IntegerLiteral', 'BooleanLiteral'] }],
