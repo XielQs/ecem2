@@ -78,12 +78,26 @@ export default class Lexer {
   public readString(): string {
     const start = this.position + 1 // skip the opening quote
     const start_line = this.line
+    let str = ''
+
     this.readChar() // move to the next character after the opening quote
     while (this.ch !== '"' && this.ch !== '\0') {
+      if (this.ch === '\\') {
+        this.readChar()
+        const ESCAPES = ['"', '\\', 'n', 'r', 't', 'b', 'f', 'v', '0']
+        // TODO: handle unicode escapes maybe? (\\uXXXX)
+        if (ESCAPES.includes(this.ch)) {
+          str += '\\' + this.ch
+        } else {
+          str += this.ch
+        }
+      } else {
+        str += this.ch
+      }
       this.readChar()
     }
+
     if (this.ch === '"') {
-      const str = this.source_code.substring(start, this.position)
       this.readChar() // move past the closing quote
       return str
     } else {
