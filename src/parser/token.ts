@@ -39,7 +39,7 @@ export enum TokenType {
   LET = 'let',
   TRUE = 'true',
   FALSE = 'false',
-  IF = 'if',
+  CHECK = 'check',
   ELSE = 'else',
   RETURN = 'return',
   WHILE = 'while',

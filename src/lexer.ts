@@ -6,7 +6,7 @@ export const KEYWORDS: Record<string, TokenType> = {
   let: TokenType.LET,
   true: TokenType.TRUE,
   false: TokenType.FALSE,
-  if: TokenType.IF,
+  check: TokenType.CHECK,
   else: TokenType.ELSE,
   return: TokenType.RETURN,
   while: TokenType.WHILE,
