@@ -720,8 +720,7 @@ export default class Parser {
 
     let alternative: BlockStatement | undefined = undefined
 
-    if (this.peek.type === TokenType.ELSE) {
-      this.nextToken()
+    if (this.cur.type === TokenType.ELSE) {
       alternative = this.parseBlockStatement()
     }
 
