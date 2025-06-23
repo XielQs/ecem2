@@ -317,6 +317,8 @@ export default class CodeGenerator {
     this.visit(node.consequence)
 
     if (node.alternative) {
+      // remove newline before else
+      this.out = this.out.trimEnd()
       this.out += ' else '
       this.visit(node.alternative)
     }
