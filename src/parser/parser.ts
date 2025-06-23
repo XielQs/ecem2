@@ -364,8 +364,8 @@ export default class Parser {
           cType: null // will be set later
         }
 
-        const call = this.parseCallExpression(identifier)
-        return this.parseMemberAndMethodCalls(call)
+        left = this.parseCallExpression(identifier)
+        left = this.parseMemberAndMethodCalls(left)
       } else {
         left = this.parseLiteral(this.cur, null)
       }
@@ -381,6 +381,8 @@ export default class Parser {
       this.scope_manager.resolve(left.value)!.referenced = true
     }
 
+    left = this.parseMemberAndMethodCalls(left)
+
     while (
       this.peek.type !== TokenType.END_OF_FILE &&
       this.peek.type !== TokenType.NEWLINE &&
@@ -393,12 +395,14 @@ export default class Parser {
           this.throwError(this.cur, `Identifier ${this.cur.literal} is not defined`)
         }
 
-        return this.parseCallExpression({
+        left = this.parseCallExpression({
           type: 'Identifier',
           value: this.cur.literal,
           token: this.cur,
           cType: identifier.expression.cType ?? null
         })
+        left = this.parseMemberAndMethodCalls(left)
+        continue
       }
 
       // end of call expression
@@ -479,8 +483,6 @@ export default class Parser {
         cType: leftType
       } satisfies InfixExpression
     }
-
-    left = this.parseMemberAndMethodCalls(left)
 
     return left
   }
