@@ -3,7 +3,9 @@ import {
   getPrecedence,
   parseTokenAsLiteral,
   type AssignmentStatement,
+  type BlockStatement,
   type CallExpression,
+  type CheckStatement,
   type CType,
   type Expression,
   type ExpressionStatement,
@@ -127,21 +129,14 @@ export default class Parser {
       if (this.cur.type === TokenType.NEWLINE) {
         this.nextToken()
         continue
-      } else if (this.cur.type === TokenType.LET) {
-        body.push(this.parseLetStatement())
-      } else if (this.cur.type === TokenType.IDENTIFIER && this.peek.type === TokenType.ASSIGN) {
-        body.push(this.parseAssignmentStatement())
-      } else if (this.cur.type === TokenType.IMPORT) {
-        body.push(this.parseImportStatement())
-      } else {
-        const expr = this.parseExpressionStatement()
-        if (expr) {
-          body.push(expr)
-          continue
-        }
-        this.throwError(this.cur)
       }
 
+      const stmt = this.parseStatement()
+      if (stmt) {
+        body.push(stmt)
+      }
+
+      this.nextToken()
       this.skipSemicolon()
     }
 
@@ -223,6 +218,24 @@ export default class Parser {
     }
   }
 
+  private parseStatement(): Statement | null {
+    switch (this.cur.type) {
+      case TokenType.LET:
+        return this.parseLetStatement()
+      case TokenType.CHECK:
+        return this.parseCheckStatement()
+      case TokenType.IMPORT:
+        return this.parseImportStatement()
+      case TokenType.IDENTIFIER:
+        if (this.peek.type === TokenType.ASSIGN) {
+          return this.parseAssignmentStatement()
+        }
+        return this.parseExpressionStatement()
+      default:
+        return this.parseExpressionStatement()
+    }
+  }
+
   private parseLetStatement(): LetStatement {
     this.expectPeek(TokenType.IDENTIFIER)
 
@@ -241,9 +254,7 @@ export default class Parser {
 
     this.nextToken() // let x = 69
 
-    if (this.scope_manager.has(name.value)) {
-      // TODO: fix carets when using semicolon
-
+    if (this.scope_manager.hasScope(name.value)) {
       this.throwError(
         {
           column: 0,
@@ -254,7 +265,7 @@ export default class Parser {
         `Identifier ${name.value} has already been declared`,
         {
           carets: Infinity,
-          spaces: 0
+          spaces: name.token.column - 1 - 'let '.length // -1 because we want to point to the identifier itself
         }
       )
     }
@@ -642,6 +653,70 @@ export default class Parser {
       type: 'ImportStatement',
       name,
       token: stmt
+    }
+  }
+
+  private parseBlockStatement(): BlockStatement {
+    const block: BlockStatement = {
+      type: 'BlockStatement',
+      statements: [],
+      token: this.cur
+    }
+
+    this.scope_manager.enterScope()
+
+    this.expectPeek(TokenType.LBRACE)
+
+    this.nextToken()
+
+    while (this.cur.type !== TokenType.RBRACE && this.cur.type !== TokenType.END_OF_FILE) {
+      this.skipNewline()
+      const stmt = this.parseStatement()
+      if (stmt) {
+        block.statements.push(stmt)
+      }
+      this.nextToken()
+    }
+
+    this.scope_manager.exitScope()
+
+    return block
+  }
+
+  private parseCheckStatement(): CheckStatement {
+    const token = this.cur
+
+    this.nextToken()
+    if (this.cur.type === TokenType.LPAREN) {
+      this.throwError(
+        this.cur,
+        `Unexpected token ${this.cur.type} in check statement, expected condition expression`
+      )
+    }
+    const condition = this.parseExpression(0)
+
+    if (condition.cType !== 'BooleanLiteral') {
+      this.throwError(
+        condition.token,
+        `Expected condition expression to be of type boolean, got ${CTypeToHuman(condition.cType)}`
+      )
+    }
+
+    const consequence = this.parseBlockStatement()
+
+    let alternative: BlockStatement | undefined = undefined
+
+    if (this.peek.type === TokenType.ELSE) {
+      this.nextToken()
+      alternative = this.parseBlockStatement()
+    }
+
+    return {
+      type: 'CheckStatement',
+      condition,
+      consequence,
+      alternative,
+      token
     }
   }
 }

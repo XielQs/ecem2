@@ -74,7 +74,27 @@ export interface ImportStatement {
   token: Token
 }
 
-export type Statement = LetStatement | ExpressionStatement | AssignmentStatement | ImportStatement
+export interface BlockStatement {
+  type: 'BlockStatement'
+  statements: Statement[]
+  token: Token
+}
+
+export interface CheckStatement {
+  type: 'CheckStatement'
+  condition: Expression
+  consequence: BlockStatement
+  alternative?: BlockStatement
+  token: Token
+}
+
+export type Statement =
+  | LetStatement
+  | ExpressionStatement
+  | AssignmentStatement
+  | ImportStatement
+  | BlockStatement
+  | CheckStatement
 
 // ---------------- Expressions ----------------
 

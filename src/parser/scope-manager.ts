@@ -38,4 +38,8 @@ export default class ScopeManager {
   has(name: string): boolean {
     return this.resolve(name) !== undefined
   }
+
+  hasScope(name: string): boolean {
+    return this.scopes[this.scopes.length - 1].has(name)
+  }
 }

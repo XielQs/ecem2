@@ -14,7 +14,9 @@ import type {
   StringLiteral,
   ImportStatement,
   MethodCallExpression,
-  MemberExpression
+  MemberExpression,
+  BlockStatement,
+  CheckStatement
 } from '../parser/index.ts'
 import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
 import LiteralProperties from './literal-properties.ts'
@@ -57,6 +59,8 @@ export default class CodeGenerator {
       AssignmentStatement: AssignmentStatement
       ExpressionStatement: ExpressionStatement
       ImportStatement: ImportStatement
+      BlockStatement: BlockStatement
+      CheckStatement: CheckStatement
       InfixExpression: InfixExpression
       CallExpression: CallExpression
       MethodCallExpression: MethodCallExpression
@@ -76,6 +80,8 @@ export default class CodeGenerator {
       AssignmentStatement: this.visitAssignmentStatement,
       ExpressionStatement: this.visitExpressionStatement,
       ImportStatement: this.visitImportStatement,
+      BlockStatement: this.visitBlockStatement,
+      CheckStatement: this.visitCheckStatement,
       InfixExpression: this.visitInfixExpression,
       CallExpression: this.visitCallExpression,
       MethodCallExpression: this.visitMethodCallExpression,
@@ -284,5 +290,35 @@ export default class CodeGenerator {
     this.out += `ecem2::${literalType}::${propertyName}(`
     this.visit(node.object)
     this.out += ')'
+  }
+
+  private visitBlockStatement(node: BlockStatement): void {
+    this.out += '{\n'
+    for (const stmt of node.statements) {
+      if (stmt.type !== 'ImportStatement') {
+        this.out += '    '
+        this.out += '    '
+      }
+      this.visit(stmt)
+    }
+    if (
+      node.statements.length > 0 &&
+      node.statements[node.statements.length - 1].type !== 'ImportStatement'
+    ) {
+      this.out += '    '
+    }
+    this.out += '}\n'
+  }
+
+  private visitCheckStatement(node: CheckStatement): void {
+    this.out += 'if ('
+    this.visit(node.condition)
+    this.out += ') '
+    this.visit(node.consequence)
+
+    if (node.alternative) {
+      this.out += ' else '
+      this.visit(node.alternative)
+    }
   }
 }
