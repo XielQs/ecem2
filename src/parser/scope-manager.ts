@@ -8,7 +8,11 @@ interface IdentifierInfo {
 }
 
 export default class ScopeManager {
-  private scopes = [new Map<string, IdentifierInfo>()]
+  private scopes: Array<Map<string, IdentifierInfo>> = []
+
+  constructor() {
+    this.enterScope() // Initialize with a global scope
+  }
 
   enterScope(): void {
     this.scopes.push(new Map())
