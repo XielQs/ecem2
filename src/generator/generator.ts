@@ -124,7 +124,7 @@ export default class CodeGenerator {
       case 'Identifier':
         return this.parseExpressionType(this.parser.identifiers[expression.value].expression)
       case 'InfixExpression':
-        return this.parseExpressionType(expression.left)
+        return CTypeToCode(expression.cType)
       case 'CallExpression': {
         const func = Functions.get(expression.callee.value)
         if (!func) {
