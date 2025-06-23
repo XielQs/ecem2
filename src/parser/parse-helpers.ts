@@ -16,7 +16,11 @@ export const PRECEDENCE: Record<
   | TokenType.LPAREN
   | TokenType.RPAREN
   | TokenType.AND
-  | TokenType.OR,
+  | TokenType.OR
+  | TokenType.LT
+  | TokenType.GT
+  | TokenType.LT_EQ
+  | TokenType.GT_EQ,
   number
 > = {
   [TokenType.OR]: 1,
@@ -25,8 +29,12 @@ export const PRECEDENCE: Record<
   [TokenType.MINUS]: 3,
   [TokenType.SLASH]: 4,
   [TokenType.ASTERISK]: 4,
-  [TokenType.LPAREN]: 5,
-  [TokenType.RPAREN]: 5
+  [TokenType.LT]: 5,
+  [TokenType.GT]: 5,
+  [TokenType.LT_EQ]: 5,
+  [TokenType.GT_EQ]: 5,
+  [TokenType.LPAREN]: 6,
+  [TokenType.RPAREN]: 6
 }
 
 export function getPrecedence(token: Token): number {

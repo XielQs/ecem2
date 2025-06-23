@@ -426,6 +426,24 @@ export default class Parser {
         )
       }
 
+      if (['<', '>', '<=', '>='].includes(operator)) {
+        if (leftType !== 'IntegerLiteral' || rightType !== 'IntegerLiteral') {
+          this.throwError(
+            operatorToken,
+            `Cannot use comparison operator ${operator} on non-integer types`
+          )
+        }
+        left = {
+          type: 'InfixExpression',
+          operator,
+          left,
+          right,
+          token: operatorToken,
+          cType: 'BooleanLiteral'
+        }
+        continue
+      }
+
       if (leftType !== rightType) {
         const convertInfo =
           leftType === 'StringLiteral' || rightType === 'StringLiteral'
