@@ -61,6 +61,16 @@ export default class Parser {
     }
   }
 
+  private expectCur(type: TokenType): void {
+    this.skipNewline()
+    this.skipSemicolon()
+    if (this.cur.type === type) {
+      this.nextToken()
+    } else {
+      this.throwError(this.cur, `Unexpected token ${this.cur.type} expected ${type}`)
+    }
+  }
+
   private skipNewline(): void {
     while (this.cur.type === TokenType.NEWLINE) {
       this.nextToken()
@@ -679,6 +689,8 @@ export default class Parser {
       }
       this.skipSemicolon()
     }
+
+    this.expectCur(TokenType.RBRACE)
 
     this.scope_manager.exitScope()
 
