@@ -678,6 +678,7 @@ export default class Parser {
         block.statements.push(stmt)
       }
       this.nextToken()
+      this.skipNewline()
     }
 
     this.scope_manager.exitScope()
