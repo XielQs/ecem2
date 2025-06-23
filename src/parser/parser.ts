@@ -20,14 +20,9 @@ import LiteralMethods from '../generator/literal-methods.ts'
 import { type Token, TokenType } from './token.ts'
 import Functions from '../generator/functions.ts'
 import { STDModule } from '../generator/index.ts'
+import ScopeManager from './scope-manager.ts'
 import { handleError } from '../common.ts'
 import Lexer from '../lexer.ts'
-
-interface IdentifierInfo {
-  expression: Expression
-  referenced: boolean
-  declaredAt: Token
-}
 
 interface ImportInfo {
   name: STDModule
@@ -37,13 +32,14 @@ interface ImportInfo {
 
 export default class Parser {
   private readonly lexer: Lexer
+  public readonly scope_manager: ScopeManager
   public cur: Token
   public peek: Token
-  public identifiers: Record<string, IdentifierInfo> = {}
   public imports = new Map<STDModule, ImportInfo>()
 
   public constructor(lexer: Lexer) {
     this.lexer = lexer
+    this.scope_manager = new ScopeManager()
     this.cur = this.lexer.nextToken()
     this.peek = this.lexer.nextToken()
   }
@@ -150,7 +146,7 @@ export default class Parser {
     }
 
     // check for unused identifiers
-    for (const [name, info] of Object.entries(this.identifiers)) {
+    for (const [name, info] of this.scope_manager.scopeEntiries.entries()) {
       if (!info.referenced) {
         this.throwWarning(info.declaredAt, `Identifier ${name} is declared but never used`)
       }
@@ -206,7 +202,7 @@ export default class Parser {
           cType: 'BooleanLiteral'
         }
       case TokenType.IDENTIFIER: {
-        const identifier = this.identifiers[token.literal]
+        const identifier = this.scope_manager.resolve(token.literal)
         if (!identifier) {
           this.throwError(token, `Identifier ${token.literal} is not defined`)
         }
@@ -245,7 +241,7 @@ export default class Parser {
 
     this.nextToken() // let x = 69
 
-    if (this.identifiers[name.value]) {
+    if (this.scope_manager.has(name.value)) {
       // TODO: fix carets when using semicolon
 
       this.throwError(
@@ -263,11 +259,11 @@ export default class Parser {
       )
     }
 
-    this.identifiers[name.value] = {
+    this.scope_manager.define(name.value, {
       expression: value,
       referenced: false,
       declaredAt: name.token
-    }
+    })
     name.cType = value.cType ?? null
 
     return {
@@ -284,7 +280,7 @@ export default class Parser {
       token: this.cur,
       cType: null
     }
-    const identifier = this.identifiers[name.value]
+    const identifier = this.scope_manager.resolve(name.value)
 
     if (!identifier) {
       this.throwError(this.cur, `Identifier ${name.value} is not declared`)
@@ -304,11 +300,11 @@ export default class Parser {
     }
     this.nextToken() // consume the value
 
-    this.identifiers[name.value] = {
+    this.scope_manager.define(name.value, {
       expression: value,
       referenced: false,
       declaredAt: name.token
-    }
+    })
     name.cType = value.cType ?? null
 
     return {
@@ -334,7 +330,8 @@ export default class Parser {
   private getNodeCType(node: Expression): CType | undefined {
     if (node.type === 'InfixExpression') return node.cType ?? null
     if (node.type === 'Identifier') {
-      const ref = this.identifiers[node.value]
+      const ref = this.scope_manager.resolve(node.value)
+      if (!ref) this.throwError(node.token, `Identifier ${node.value} is not defined`)
       return ref.expression.cType ?? 'VoidLiteral'
     }
     if (node.type === 'CallExpression' || node.type === 'MethodCallExpression') {
@@ -369,8 +366,8 @@ export default class Parser {
       this.throwError(this.cur, `Unexpected token ${this.cur.type} in expression`)
     }
 
-    if (left.type === 'Identifier' && !this.identifiers[left.value].referenced) {
-      this.identifiers[left.value].referenced = true
+    if (left.type === 'Identifier' && !this.scope_manager.resolve(left.value)!.referenced) {
+      this.scope_manager.resolve(left.value)!.referenced = true
     }
 
     while (
@@ -380,7 +377,7 @@ export default class Parser {
     ) {
       if (this.peek.type === TokenType.LPAREN && left.type === 'Identifier') {
         // function call
-        const identifier = this.identifiers[this.cur.literal]
+        const identifier = this.scope_manager.resolve(this.cur.literal)
         if (!identifier) {
           this.throwError(this.cur, `Identifier ${this.cur.literal} is not defined`)
         }

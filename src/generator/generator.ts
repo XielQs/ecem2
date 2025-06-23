@@ -122,7 +122,11 @@ export default class CodeGenerator {
       case 'VoidLiteral':
         return 'void'
       case 'Identifier':
-        return this.parseExpressionType(this.parser.identifiers[expression.value].expression)
+        const identifierInfo = this.parser.scope_manager.resolve(expression.value)
+        if (!identifierInfo) {
+          throw new Error(`Identifier ${expression.value} is not defined`)
+        }
+        return this.parseExpressionType(identifierInfo.expression)
       case 'InfixExpression':
         return CTypeToCode(expression.cType)
       case 'CallExpression': {

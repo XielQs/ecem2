@@ -56,7 +56,7 @@ const parser = new Parser(lexer)
 const program = parser.parseProgram()
 
 verbose('[verbose]: AST', JSON.stringify(program, null, 2))
-verbose('[verbose]: Identifiers', parser.identifiers)
+verbose('[verbose]: Identifiers', [...parser.scope_manager.scopeEntiries.values()])
 
 const generator = new CodeGenerator(parser)
 const generated_code = generator.generate(program)
