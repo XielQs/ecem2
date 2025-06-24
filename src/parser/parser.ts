@@ -363,7 +363,7 @@ export default class Parser {
     if (node.type === 'CallExpression' || node.type === 'MethodCallExpression') {
       return node.callee.cType ?? null
     }
-    if (node.type === 'MemberExpression') return node.property.cType ?? null
+    if (node.type === 'PropertyExpression') return node.property.cType ?? null
     return node.type
   }
 
@@ -380,7 +380,7 @@ export default class Parser {
         }
 
         left = this.parseCallExpression(identifier)
-        left = this.parseMemberAndMethodCalls(left)
+        left = this.parsePropertyAndMethodCalls(left)
       } else {
         left = this.parseLiteral(this.cur, null)
       }
@@ -396,7 +396,7 @@ export default class Parser {
       this.scope_manager.resolve(left.value)!.referenced = true
     }
 
-    left = this.parseMemberAndMethodCalls(left)
+    left = this.parsePropertyAndMethodCalls(left)
 
     while (
       this.peek.type !== TokenType.END_OF_FILE &&
@@ -416,7 +416,7 @@ export default class Parser {
           token: this.cur,
           cType: identifier.expression.cType ?? null
         })
-        left = this.parseMemberAndMethodCalls(left)
+        left = this.parsePropertyAndMethodCalls(left)
         continue
       }
 
@@ -523,7 +523,7 @@ export default class Parser {
     return args
   }
 
-  private parseMemberAndMethodCalls(left: Expression): Expression {
+  private parsePropertyAndMethodCalls(left: Expression): Expression {
     while (this.peek.type === TokenType.DOT) {
       this.nextToken() // consume DOT
 
@@ -539,7 +539,7 @@ export default class Parser {
       if (!objectCType) {
         this.throwError(
           propertyToken,
-          `Cannot determine type of object in member expression, expected a valid type but got ${left.type}`
+          `Cannot determine type of object in property expression, expected a valid type but got ${left.type}`
         )
       }
 
@@ -574,7 +574,7 @@ export default class Parser {
         left = {
           type: 'MethodCallExpression',
           callee: {
-            type: 'MemberExpression',
+            type: 'PropertyExpression',
             object: left,
             property,
             token: propertyToken,
@@ -599,7 +599,7 @@ export default class Parser {
         property.cType = propertyInfo.returnType
 
         left = {
-          type: 'MemberExpression',
+          type: 'PropertyExpression',
           object: left,
           property,
           token: propertyToken,

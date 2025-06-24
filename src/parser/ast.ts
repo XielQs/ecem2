@@ -112,15 +112,15 @@ export interface CallExpression<A extends Expression = Expression> extends BaseN
   args: A[]
 }
 
-export interface MemberExpression<O extends Expression = Expression> extends BaseNode {
-  type: 'MemberExpression'
+export interface PropertyExpression<O extends Expression = Expression> extends BaseNode {
+  type: 'PropertyExpression'
   object: O
   property: Identifier
 }
 
 export interface MethodCallExpression<O extends Expression = Expression> extends BaseNode {
   type: 'MethodCallExpression'
-  callee: MemberExpression<O>
+  callee: PropertyExpression<O>
   args: Expression[]
 }
 
@@ -128,5 +128,5 @@ export type Expression =
   | Literal
   | InfixExpression
   | CallExpression
-  | MemberExpression
+  | PropertyExpression
   | MethodCallExpression

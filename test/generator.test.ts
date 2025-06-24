@@ -72,7 +72,7 @@ describe('CodeGenerator', () => {
     )
   })
 
-  it('generates code for member expression', () => {
+  it('generates code for property expression', () => {
     const code = 'let len = "hello".len'
     const parser = new Parser(new Lexer(code, 'test'))
     const program = parser.parseProgram()

@@ -14,7 +14,7 @@ import type {
   StringLiteral,
   ImportStatement,
   MethodCallExpression,
-  MemberExpression,
+  PropertyExpression,
   BlockStatement,
   CheckStatement
 } from '../parser/index.ts'
@@ -64,7 +64,7 @@ export default class CodeGenerator {
       InfixExpression: InfixExpression
       CallExpression: CallExpression
       MethodCallExpression: MethodCallExpression
-      MemberExpression: MemberExpression
+      PropertyExpression: PropertyExpression
     }
 
     const typeMap: {
@@ -85,7 +85,7 @@ export default class CodeGenerator {
       InfixExpression: this.visitInfixExpression,
       CallExpression: this.visitCallExpression,
       MethodCallExpression: this.visitMethodCallExpression,
-      MemberExpression: this.visitMemberExpression
+      PropertyExpression: this.visitPropertyExpression
     }
     const visitFn = typeMap[node.type] as (node: TypeMap[keyof TypeMap]) => void
     if (visitFn) visitFn.bind(this, node)()
@@ -156,7 +156,7 @@ export default class CodeGenerator {
         }
         return CTypeToCode(method.returnType)
       }
-      case 'MemberExpression': {
+      case 'PropertyExpression': {
         const property = LiteralProperties.get(expression.object.cType, expression.property.value)
         if (!property) {
           throw new Error(
@@ -274,7 +274,7 @@ export default class CodeGenerator {
     this.out += ')'
   }
 
-  private visitMemberExpression(node: MemberExpression): void {
+  private visitPropertyExpression(node: PropertyExpression): void {
     const propertyName = node.property.value
     const literalType = node.object.cType
     if (!literalType) {
