@@ -16,7 +16,8 @@ import type {
   MethodCallExpression,
   PropertyExpression,
   BlockStatement,
-  CheckStatement
+  CheckStatement,
+  DuringStatement
 } from '../parser/index.ts'
 import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
 import LiteralProperties from './literal-properties.ts'
@@ -61,6 +62,7 @@ export default class CodeGenerator {
       ImportStatement: ImportStatement
       BlockStatement: BlockStatement
       CheckStatement: CheckStatement
+      DuringStatement: DuringStatement
       InfixExpression: InfixExpression
       CallExpression: CallExpression
       MethodCallExpression: MethodCallExpression
@@ -82,6 +84,7 @@ export default class CodeGenerator {
       ImportStatement: this.visitImportStatement,
       BlockStatement: this.visitBlockStatement,
       CheckStatement: this.visitCheckStatement,
+      DuringStatement: this.visitDuringStatement,
       InfixExpression: this.visitInfixExpression,
       CallExpression: this.visitCallExpression,
       MethodCallExpression: this.visitMethodCallExpression,
@@ -322,5 +325,12 @@ export default class CodeGenerator {
       this.out += ' else '
       this.visit(node.fail)
     }
+  }
+
+  private visitDuringStatement(node: DuringStatement): void {
+    this.out += 'while ('
+    this.visit(node.condition)
+    this.out += ') '
+    this.visit(node.body)
   }
 }

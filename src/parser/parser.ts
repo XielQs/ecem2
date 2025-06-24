@@ -7,6 +7,7 @@ import {
   type CallExpression,
   type CheckStatement,
   type CType,
+  type DuringStatement,
   type Expression,
   type ExpressionStatement,
   type Identifier,
@@ -239,6 +240,8 @@ export default class Parser {
         return this.parseLetStatement()
       case TokenType.CHECK:
         return this.parseCheckStatement()
+      case TokenType.DURING:
+        return this.parseDuringStatement()
       case TokenType.IMPORT:
         return this.parseImportStatement()
       case TokenType.IDENTIFIER:
@@ -693,6 +696,7 @@ export default class Parser {
         block.statements.push(stmt)
       }
       this.skipSemicolon()
+      this.skipNewline()
     }
 
     this.expectCur(TokenType.RBRACE)
@@ -734,6 +738,35 @@ export default class Parser {
       condition,
       body,
       fail,
+      token
+    }
+  }
+
+  private parseDuringStatement(): DuringStatement {
+    const token = this.cur
+
+    this.nextToken()
+    if (this.cur.type === TokenType.LPAREN) {
+      this.throwError(
+        this.cur,
+        `Unexpected token ${this.cur.type} in during statement, expected condition expression`
+      )
+    }
+    const condition = this.parseExpression(0)
+
+    if (condition.cType !== 'BooleanLiteral') {
+      this.throwError(
+        condition.token,
+        `Expected condition expression to be of type boolean, got ${CTypeToHuman(condition.cType)}`
+      )
+    }
+
+    const body = this.parseBlockStatement()
+
+    return {
+      type: 'DuringStatement',
+      condition,
+      body,
       token
     }
   }

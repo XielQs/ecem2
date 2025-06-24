@@ -88,6 +88,13 @@ export interface CheckStatement {
   token: Token
 }
 
+export interface DuringStatement {
+  type: 'DuringStatement'
+  condition: Expression
+  body: BlockStatement
+  token: Token
+}
+
 export type Statement =
   | LetStatement
   | ExpressionStatement
@@ -95,6 +102,7 @@ export type Statement =
   | ImportStatement
   | BlockStatement
   | CheckStatement
+  | DuringStatement
 
 // ---------------- Expressions ----------------
 
