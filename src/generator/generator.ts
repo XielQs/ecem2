@@ -314,13 +314,13 @@ export default class CodeGenerator {
     this.out += 'if ('
     this.visit(node.condition)
     this.out += ') '
-    this.visit(node.consequence)
+    this.visit(node.body)
 
-    if (node.alternative) {
+    if (node.fail) {
       // remove newline before else
       this.out = this.out.trimEnd()
       this.out += ' else '
-      this.visit(node.alternative)
+      this.visit(node.fail)
     }
   }
 }

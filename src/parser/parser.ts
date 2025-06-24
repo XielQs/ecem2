@@ -721,19 +721,19 @@ export default class Parser {
       )
     }
 
-    const consequence = this.parseBlockStatement()
+    const body = this.parseBlockStatement()
 
-    let alternative: BlockStatement | undefined = undefined
+    let fail: BlockStatement | null = null
 
     if (this.cur.type === TokenType.FAIL) {
-      alternative = this.parseBlockStatement()
+      fail = this.parseBlockStatement()
     }
 
     return {
       type: 'CheckStatement',
       condition,
-      consequence,
-      alternative,
+      body,
+      fail,
       token
     }
   }

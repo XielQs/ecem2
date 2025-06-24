@@ -83,8 +83,8 @@ export interface BlockStatement {
 export interface CheckStatement {
   type: 'CheckStatement'
   condition: Expression
-  consequence: BlockStatement
-  alternative?: BlockStatement
+  body: BlockStatement
+  fail: BlockStatement | null
   token: Token
 }
 
