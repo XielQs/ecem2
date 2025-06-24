@@ -725,7 +725,7 @@ export default class Parser {
 
     let alternative: BlockStatement | undefined = undefined
 
-    if (this.cur.type === TokenType.ELSE) {
+    if (this.cur.type === TokenType.FAIL) {
       alternative = this.parseBlockStatement()
     }
 

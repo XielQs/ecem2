@@ -40,7 +40,7 @@ export enum TokenType {
   TRUE = 'true',
   FALSE = 'false',
   CHECK = 'check',
-  ELSE = 'else',
+  FAIL = 'fail',
   RETURN = 'return',
   WHILE = 'while',
   IMPORT = 'import'
