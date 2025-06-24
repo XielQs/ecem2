@@ -331,7 +331,7 @@ export default class Parser {
 
     this.scope_manager.define(name.value, {
       expression: value,
-      referenced: false,
+      referenced: identifier.referenced,
       declaredAt: name.token
     })
     name.cType = value.cType ?? null
