@@ -150,8 +150,13 @@ export default class Parser {
       this.skipSemicolon()
     }
 
+    const unused_identifiers = [
+      ...this.scope_manager.scopeEntiries.entries(),
+      ...this.scope_manager.unusedIdentifiers.entries()
+    ]
+
     // check for unused identifiers
-    for (const [name, info] of this.scope_manager.scopeEntiries.entries()) {
+    for (const [name, info] of unused_identifiers) {
       if (!info.referenced) {
         this.throwWarning(info.declaredAt, `Identifier ${name} is declared but never used`)
       }

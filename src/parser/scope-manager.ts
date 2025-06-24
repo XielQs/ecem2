@@ -9,9 +9,10 @@ interface IdentifierInfo {
 
 export default class ScopeManager {
   private scopes: Array<Map<string, IdentifierInfo>> = []
+  public readonly unusedIdentifiers = new Map<string, IdentifierInfo>()
 
   constructor() {
-    this.enterScope() // Initialize with a global scope
+    this.enterScope() // initialize with a global scope
   }
 
   enterScope(): void {
@@ -19,6 +20,10 @@ export default class ScopeManager {
   }
 
   exitScope(): void {
+    const currentScope = this.scopes[this.scopes.length - 1]
+    for (const [name, info] of currentScope.entries()) {
+      if (!info.referenced) this.unusedIdentifiers.set(name, info)
+    }
     this.scopes.pop()
   }
 
