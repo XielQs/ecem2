@@ -49,6 +49,6 @@ export default class ScopeManager {
   }
 
   hasScope(name: string): boolean {
-    return this.scopes[this.scopes.length - 1].has(name)
+    return this.scopeEntiries.has(name)
   }
 }
