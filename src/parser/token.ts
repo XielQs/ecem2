@@ -42,7 +42,7 @@ export enum TokenType {
   CHECK = 'check',
   FAIL = 'fail',
   RETURN = 'return',
-  WHILE = 'while',
+  DURING = 'during',
   IMPORT = 'import'
 }
 
