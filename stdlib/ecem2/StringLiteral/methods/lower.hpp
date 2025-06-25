@@ -3,7 +3,7 @@
 
 namespace ecem2 {
 namespace StringLiteral {
-inline std::string upper(std::string obj)
+inline std::string lower(std::string obj)
 {
     std::string res = obj;
     for (auto &c : res)
