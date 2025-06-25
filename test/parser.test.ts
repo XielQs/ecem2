@@ -1,6 +1,9 @@
 import Parser, {
   type BooleanLiteral,
   type CallExpression,
+  type CheckStatement,
+  type DuringStatement,
+  type Expression,
   type InfixExpression,
   type IntegerLiteral,
   type LetStatement,
@@ -225,11 +228,11 @@ describe('Parser', () => {
     const code = 'let s = "hello".testMethod(123)'
     const parser = new Parser(new Lexer(code, 'test'))
     const program = parser.parseProgram()
-    const stmt = program.body[0] as LetStatement<MethodCallExpression>
+    const stmt = program.body[0] as LetStatement<MethodCallExpression<Expression, IntegerLiteral>>
     expect(stmt.value.type).toBe('MethodCallExpression')
     expect(stmt.value.callee.property.value).toBe('testMethod')
     expect(stmt.value.args.length).toBe(1)
-    expect((stmt.value.args[0] as IntegerLiteral).value).toBe(123)
+    expect(stmt.value.args[0].value).toBe(123)
   })
 
   it('parses nested method calls', () => {
@@ -271,5 +274,103 @@ describe('Parser', () => {
     expect(stmt.value.type).toBe('CallExpression')
     expect(stmt.value.callee.value).toBe('process')
     expect(stmt.value.args[0].callee.property.value).toBe('upper')
+  })
+
+  it('parses simple during statement', () => {
+    const code = 'during true { let x = 1 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    expect(program.body.length).toBe(1)
+    const stmt = program.body[0] as DuringStatement<BooleanLiteral>
+    expect(stmt.type).toBe('DuringStatement')
+    expect(stmt.condition.type).toBe('BooleanLiteral')
+    expect(stmt.condition.value).toBe(true)
+    expect(stmt.body.type).toBe('BlockStatement')
+    expect(stmt.body.statements.length).toBe(1)
+  })
+
+  it('parses during statement with fail block', () => {
+    const code = 'during true { let x = 1 } fail { let y = 2 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    expect(program.body.length).toBe(1)
+    const stmt = program.body[0] as DuringStatement<BooleanLiteral>
+    expect(stmt.type).toBe('DuringStatement')
+    expect(stmt.condition.type).toBe('BooleanLiteral')
+    expect(stmt.condition.value).toBe(true)
+    expect(stmt.body.type).toBe('BlockStatement')
+    expect(stmt.body.statements.length).toBe(1)
+    expect(stmt.fail?.type).toBe('BlockStatement')
+    expect(stmt.fail?.statements.length).toBe(1)
+  })
+
+  it('parses during statement with infix expression condition', () => {
+    const code = 'during 1 < 2 { let x = 1 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    expect(program.body.length).toBe(1)
+    const stmt = program.body[0] as DuringStatement<InfixExpression>
+    expect(stmt.type).toBe('DuringStatement')
+    expect(stmt.condition.type).toBe('InfixExpression')
+    expect(stmt.body.type).toBe('BlockStatement')
+    expect(stmt.body.statements.length).toBe(1)
+  })
+
+  it('throws error on during statement with non-boolean condition', () => {
+    const code = 'during 123 { let x = 1 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    expectPanic(
+      () => parser.parseProgram(),
+      'Expected condition expression to be of type boolean, got integer'
+    )
+  })
+
+  it('parses simple check statement', () => {
+    const code = 'check true { let x = 1 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    expect(program.body.length).toBe(1)
+    const stmt = program.body[0] as CheckStatement<BooleanLiteral>
+    expect(stmt.type).toBe('CheckStatement')
+    expect(stmt.condition.type).toBe('BooleanLiteral')
+    expect(stmt.condition.value).toBe(true)
+    expect(stmt.body.type).toBe('BlockStatement')
+    expect(stmt.body.statements.length).toBe(1)
+  })
+
+  it('parses check statement with fail block', () => {
+    const code = 'check true { let x = 1 } fail { let y = 2 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    expect(program.body.length).toBe(1)
+    const stmt = program.body[0] as CheckStatement<BooleanLiteral>
+    expect(stmt.type).toBe('CheckStatement')
+    expect(stmt.condition.type).toBe('BooleanLiteral')
+    expect(stmt.condition.value).toBe(true)
+    expect(stmt.body.type).toBe('BlockStatement')
+    expect(stmt.body.statements.length).toBe(1)
+    expect(stmt.fail?.type).toBe('BlockStatement')
+    expect(stmt.fail?.statements.length).toBe(1)
+  })
+
+  it('parses check statement with infix expression condition', () => {
+    const code = 'check 1 < 2 { let x = 1 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    expect(program.body.length).toBe(1)
+    const stmt = program.body[0] as CheckStatement<InfixExpression>
+    expect(stmt.type).toBe('CheckStatement')
+    expect(stmt.condition.type).toBe('InfixExpression')
+    expect(stmt.body.type).toBe('BlockStatement')
+    expect(stmt.body.statements.length).toBe(1)
+  })
+
+  it('throws error on check statement with non-boolean condition', () => {
+    const code = 'check 123 { let x = 1 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    expectPanic(
+      () => parser.parseProgram(),
+      'Expected condition expression to be of type boolean, got integer'
+    )
   })
 })
