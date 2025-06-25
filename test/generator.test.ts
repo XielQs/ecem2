@@ -102,4 +102,48 @@ describe('CodeGenerator', () => {
       'int result = ecem2::process(ecem2::StringLiteral::upper(std::string("hello")))'
     )
   })
+
+  it('generates code for check statement', () => {
+    const code = 'check true { let x = 1 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const generator = new CodeGenerator(parser)
+    const generatedCode = generator.generate(program)
+    expect(generatedCode).toContain('if (true) {')
+    expect(generatedCode).toContain('int x = 1')
+  })
+
+  it('generates code for check statement with fail', () => {
+    const code = 'check true { let x = 1 } fail { let y = 2 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const generator = new CodeGenerator(parser)
+    const generatedCode = generator.generate(program)
+    expect(generatedCode).toContain('if (true) {')
+    expect(generatedCode).toContain('int x = 1')
+    expect(generatedCode).toContain('} else {')
+    expect(generatedCode).toContain('int y = 2')
+  })
+
+  it('generates code for during statement', () => {
+    const code = 'during true { let x = 1 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const generator = new CodeGenerator(parser)
+    const generatedCode = generator.generate(program)
+    expect(generatedCode).toContain('while (true) {')
+    expect(generatedCode).toContain('int x = 1')
+  })
+
+  it('generates code for during statement with fail', () => {
+    const code = 'during true { let x = 1 } fail { let y = 2 }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const generator = new CodeGenerator(parser)
+    const generatedCode = generator.generate(program)
+    expect(generatedCode).toContain('while (true) {')
+    expect(generatedCode).toContain('int x = 1')
+    expect(generatedCode).toContain('if (!fail_')
+    expect(generatedCode).toContain('int y = 2')
+  })
 })
