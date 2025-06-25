@@ -692,6 +692,7 @@ export default class Parser {
       if (stmt) {
         block.statements.push(stmt)
       }
+      this.nextToken() // move to next token
       this.skipSemicolon()
       this.skipNewline()
     }
