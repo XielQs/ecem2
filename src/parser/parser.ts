@@ -345,13 +345,10 @@ export default class Parser {
 
   private parseExpressionStatement(): ExpressionStatement {
     const expression = this.parseExpression(0)
-    this.nextToken()
-    this.skipSemicolon()
-    this.skipNewline()
     return {
       type: 'ExpressionStatement',
       expression,
-      token: this.cur,
+      token: expression.token,
       cType: expression.cType ?? null
     }
   }
