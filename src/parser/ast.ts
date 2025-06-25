@@ -92,6 +92,7 @@ export interface DuringStatement {
   type: 'DuringStatement'
   condition: Expression
   body: BlockStatement
+  fail: BlockStatement | null
   token: Token
 }
 

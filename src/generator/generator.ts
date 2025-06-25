@@ -23,6 +23,7 @@ import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../par
 import LiteralProperties from './literal-properties.ts'
 import LiteralMethods from './literal-methods.ts'
 import type Parser from '../parser/index.ts'
+import { randomBytes } from 'node:crypto'
 import { CTypeToCode } from './index.ts'
 import Functions from './functions.ts'
 
@@ -328,9 +329,37 @@ export default class CodeGenerator {
   }
 
   private visitDuringStatement(node: DuringStatement): void {
+    const failVarName = `fail_${randomBytes(8).toString('hex')}`
+    if (node.fail) {
+      this.out += `bool ${failVarName} = false;\n    `
+      node.body.statements.unshift({
+        type: 'ExpressionStatement',
+        expression: {
+          type: 'AssignmentStatement',
+          name: {
+            type: 'Identifier',
+            value: failVarName,
+            cType: 'BooleanLiteral',
+            token: node.token
+          },
+          value: {
+            type: 'BooleanLiteral',
+            value: true,
+            cType: 'BooleanLiteral',
+            token: node.token
+          }
+        },
+        token: node.token,
+        cType: 'BooleanLiteral'
+      } satisfies ExpressionStatement)
+    }
     this.out += 'while ('
     this.visit(node.condition)
     this.out += ') '
     this.visit(node.body)
+    if (node.fail) {
+      this.out += `    if (!${failVarName}) `
+      this.visit(node.fail)
+    }
   }
 }

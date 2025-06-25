@@ -763,10 +763,17 @@ export default class Parser {
 
     const body = this.parseBlockStatement()
 
+    let fail: BlockStatement | null = null
+
+    if (this.cur.type === TokenType.FAIL) {
+      fail = this.parseBlockStatement()
+    }
+
     return {
       type: 'DuringStatement',
       condition,
       body,
+      fail,
       token
     }
   }
