@@ -80,17 +80,17 @@ export interface BlockStatement {
   token: Token
 }
 
-export interface CheckStatement {
+export interface CheckStatement<C extends Expression = Expression> {
   type: 'CheckStatement'
-  condition: Expression
+  condition: C
   body: BlockStatement
   fail: BlockStatement | null
   token: Token
 }
 
-export interface DuringStatement {
+export interface DuringStatement<C extends Expression = Expression> {
   type: 'DuringStatement'
-  condition: Expression
+  condition: C
   body: BlockStatement
   fail: BlockStatement | null
   token: Token
@@ -127,10 +127,13 @@ export interface PropertyExpression<O extends Expression = Expression> extends B
   property: Identifier
 }
 
-export interface MethodCallExpression<O extends Expression = Expression> extends BaseNode {
+export interface MethodCallExpression<
+  O extends Expression = Expression,
+  A extends Expression = Expression
+> extends BaseNode {
   type: 'MethodCallExpression'
   callee: PropertyExpression<O>
-  args: Expression[]
+  args: A[]
 }
 
 export type Expression =
