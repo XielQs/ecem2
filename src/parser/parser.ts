@@ -453,6 +453,25 @@ export default class Parser {
         )
       }
 
+      if (operator === '==' || operator === '!=') {
+        if (leftType !== rightType) {
+          this.throwError(
+            operatorToken,
+            `Cannot compare ${CTypeToHuman(leftType)} and ${CTypeToHuman(rightType)}`
+          )
+        }
+
+        left = {
+          type: 'InfixExpression',
+          operator,
+          left,
+          right,
+          token: operatorToken,
+          cType: 'BooleanLiteral'
+        }
+        continue
+      }
+
       if (['<', '>', '<=', '>='].includes(operator)) {
         if (leftType !== 'IntegerLiteral' || rightType !== 'IntegerLiteral') {
           this.throwError(

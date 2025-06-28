@@ -9,32 +9,32 @@ import type {
 import { TokenType, type Token } from './token.ts'
 
 export const PRECEDENCE: Record<
-  | TokenType.PLUS
-  | TokenType.MINUS
-  | TokenType.SLASH
-  | TokenType.ASTERISK
-  | TokenType.LPAREN
-  | TokenType.RPAREN
-  | TokenType.AND
   | TokenType.OR
+  | TokenType.AND
+  | TokenType.EQ
+  | TokenType.NOT_EQ
   | TokenType.LT
   | TokenType.GT
   | TokenType.LT_EQ
-  | TokenType.GT_EQ,
+  | TokenType.GT_EQ
+  | TokenType.PLUS
+  | TokenType.MINUS
+  | TokenType.SLASH
+  | TokenType.ASTERISK,
   number
 > = {
   [TokenType.OR]: 1,
   [TokenType.AND]: 2,
-  [TokenType.PLUS]: 3,
-  [TokenType.MINUS]: 3,
-  [TokenType.SLASH]: 4,
-  [TokenType.ASTERISK]: 4,
-  [TokenType.LT]: 5,
-  [TokenType.GT]: 5,
-  [TokenType.LT_EQ]: 5,
-  [TokenType.GT_EQ]: 5,
-  [TokenType.LPAREN]: 6,
-  [TokenType.RPAREN]: 6
+  [TokenType.EQ]: 3,
+  [TokenType.NOT_EQ]: 3,
+  [TokenType.LT]: 4,
+  [TokenType.GT]: 4,
+  [TokenType.LT_EQ]: 4,
+  [TokenType.GT_EQ]: 4,
+  [TokenType.PLUS]: 5,
+  [TokenType.MINUS]: 5,
+  [TokenType.SLASH]: 6,
+  [TokenType.ASTERISK]: 6
 }
 
 export function getPrecedence(token: Token): number {
