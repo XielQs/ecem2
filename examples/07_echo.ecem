@@ -1,5 +1,4 @@
 import <io>
-import <string>
 
 let input_str = ""
 during input_str != "exit" {
