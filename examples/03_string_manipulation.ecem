@@ -1,0 +1,20 @@
+import <io>
+import <string>
+
+let message = "ecem2 is cool!"
+let length = message.len
+let upper = message.upper()
+let lower = message.lower()
+
+print("Original: ", message)
+print("Length: ", length)
+print("Uppercase: ", upper)
+print("Lowercase: ", lower)
+
+let starts = starts_with(message, "ecem2")
+let ends = ends_with(message, "cool!")
+let contains_str = contains(message, "is")
+
+print("Starts with 'ecem2': ", starts)
+print("Ends with 'cool!': ", ends)
+print("Contains 'is': ", contains_str)

@@ -1,0 +1,9 @@
+import <io>
+
+let age = 20
+
+check age >= 18 {
+  print("You are an adult.")
+} fail {
+  print("You are a minor.")
+}

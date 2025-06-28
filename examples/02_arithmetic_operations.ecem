@@ -1,0 +1,13 @@
+import <io>
+
+let x = 10
+let y = 5
+let sum = x + y
+let difference = x - y
+let product = x * y
+let quotient = x / y
+
+print("Sum: ", sum)
+print("Difference: ", difference)
+print("Product: ", product)
+print("Quotient: ", quotient)

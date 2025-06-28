@@ -1,0 +1,10 @@
+import <io>
+
+let counter = 0
+
+during counter < 5 {
+  print("Counter: ", counter)
+  counter = counter + 1
+} fail {
+  print("Loop did not execute!")
+}

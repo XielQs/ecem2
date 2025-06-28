@@ -1,0 +1,14 @@
+import <io>
+import <math>
+
+let number = 16
+let square_root = sqrt(number)
+let power = pow(2, 3)
+let maximum = max(1, 5, 2, 8, 3)
+let minimum = min(1, 5, 2, 8, 3)
+
+print("Number: ", number)
+print("Square root: ", square_root)
+print("2^3: ", power)
+print("Max: ", maximum)
+print("Min: ", minimum)
