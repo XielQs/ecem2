@@ -345,6 +345,9 @@ export default class Parser {
 
   private parseExpressionStatement(): ExpressionStatement {
     const expression = this.parseExpression(0)
+    this.nextToken()
+    this.skipSemicolon()
+    this.skipNewline()
     return {
       type: 'ExpressionStatement',
       expression,
@@ -736,7 +739,6 @@ export default class Parser {
       if (stmt) {
         block.statements.push(stmt)
       }
-      this.nextToken() // move to next token
       this.skipSemicolon()
       this.skipNewline()
     }
