@@ -727,9 +727,8 @@ export default class Parser {
 
     this.scope_manager.enterScope()
 
-    this.expectPeek(TokenType.LBRACE)
-
     this.nextToken()
+    this.expectCur(TokenType.LBRACE)
 
     while (this.cur.type !== TokenType.RBRACE && this.cur.type !== TokenType.END_OF_FILE) {
       this.skipNewline()
@@ -753,6 +752,7 @@ export default class Parser {
     const token = this.cur
 
     this.nextToken()
+    this.skipNewline()
     if (this.cur.type === TokenType.LPAREN) {
       this.throwError(
         this.cur,
@@ -772,6 +772,7 @@ export default class Parser {
 
     let fail: BlockStatement | null = null
 
+    this.skipNewline()
     if (this.cur.type === TokenType.FAIL) {
       fail = this.parseBlockStatement()
     }
@@ -789,6 +790,7 @@ export default class Parser {
     const token = this.cur
 
     this.nextToken()
+    this.skipNewline()
     if (this.cur.type === TokenType.LPAREN) {
       this.throwError(
         this.cur,
@@ -808,6 +810,7 @@ export default class Parser {
 
     let fail: BlockStatement | null = null
 
+    this.skipNewline()
     if (this.cur.type === TokenType.FAIL) {
       fail = this.parseBlockStatement()
     }
