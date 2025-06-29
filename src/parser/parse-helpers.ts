@@ -20,7 +20,8 @@ export const PRECEDENCE: Record<
   | TokenType.PLUS
   | TokenType.MINUS
   | TokenType.SLASH
-  | TokenType.ASTERISK,
+  | TokenType.ASTERISK
+  | TokenType.BANG,
   number
 > = {
   [TokenType.OR]: 1,
@@ -34,7 +35,8 @@ export const PRECEDENCE: Record<
   [TokenType.PLUS]: 5,
   [TokenType.MINUS]: 5,
   [TokenType.SLASH]: 6,
-  [TokenType.ASTERISK]: 6
+  [TokenType.ASTERISK]: 6,
+  [TokenType.BANG]: 7
 }
 
 export function getPrecedence(token: Token): number {

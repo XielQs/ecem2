@@ -136,9 +136,16 @@ export interface MethodCallExpression<
   args: A[]
 }
 
+export interface PrefixExpression<R extends Expression = Expression> extends BaseNode {
+  type: 'PrefixExpression'
+  operator: '!'
+  right: R
+}
+
 export type Expression =
   | Literal
   | InfixExpression
   | CallExpression
   | PropertyExpression
   | MethodCallExpression
+  | PrefixExpression

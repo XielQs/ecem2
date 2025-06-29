@@ -1,6 +1,8 @@
 import type { CType } from '../parser/index.ts'
 
-export function CTypeToCode(cType: CType): string {
+export type CodeType = 'int' | 'std::string' | 'bool' | 'void'
+
+export function CTypeToCode(cType: CType): CodeType {
   switch (cType) {
     case 'IntegerLiteral':
       return 'int'

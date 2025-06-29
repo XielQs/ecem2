@@ -17,14 +17,15 @@ import type {
   PropertyExpression,
   BlockStatement,
   CheckStatement,
-  DuringStatement
+  DuringStatement,
+  PrefixExpression
 } from '../parser/index.ts'
 import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
 import LiteralProperties from './literal-properties.ts'
+import { CTypeToCode, type CodeType } from './index.ts'
 import LiteralMethods from './literal-methods.ts'
 import type Parser from '../parser/index.ts'
 import { randomBytes } from 'node:crypto'
-import { CTypeToCode } from './index.ts'
 import Functions from './functions.ts'
 
 export default class CodeGenerator {
@@ -66,8 +67,9 @@ export default class CodeGenerator {
       DuringStatement: DuringStatement
       InfixExpression: InfixExpression
       CallExpression: CallExpression
-      MethodCallExpression: MethodCallExpression
       PropertyExpression: PropertyExpression
+      MethodCallExpression: MethodCallExpression
+      PrefixExpression: PrefixExpression
     }
 
     const typeMap: {
@@ -88,8 +90,9 @@ export default class CodeGenerator {
       DuringStatement: this.visitDuringStatement,
       InfixExpression: this.visitInfixExpression,
       CallExpression: this.visitCallExpression,
+      PropertyExpression: this.visitPropertyExpression,
       MethodCallExpression: this.visitMethodCallExpression,
-      PropertyExpression: this.visitPropertyExpression
+      PrefixExpression: this.visitPrefixExpression
     }
     const visitFn = typeMap[node.type] as (node: TypeMap[keyof TypeMap]) => void
     if (visitFn) visitFn.bind(this, node)()
@@ -121,7 +124,7 @@ export default class CodeGenerator {
     this.out += '}\n'
   }
 
-  private parseExpressionType(expression: Expression): string | null {
+  private parseExpressionType(expression: Expression): CodeType | null {
     switch (expression.type) {
       case 'IntegerLiteral':
         return 'int'
@@ -170,6 +173,13 @@ export default class CodeGenerator {
           )
         }
         return CTypeToCode(property.returnType)
+      }
+      case 'PrefixExpression': {
+        const rightType = this.parseExpressionType(expression.right)
+        if (!rightType) {
+          throw new Error(`Cannot determine type for right operand in prefix expression`)
+        }
+        return rightType
       }
       default:
         // @ts-expect-error = this is a type guard
@@ -360,6 +370,28 @@ export default class CodeGenerator {
     if (node.fail) {
       this.out += `    if (!${failVarName}) `
       this.visit(node.fail)
+    }
+  }
+
+  private visitPrefixExpression(node: PrefixExpression): void {
+    if (node.operator !== '!') {
+      throw new Error(`Unsupported prefix operator: ${node.operator}`)
+    }
+
+    switch (node.right.cType) {
+      case 'BooleanLiteral':
+      case 'IntegerLiteral':
+        this.out += '!('
+        this.visit(node.right)
+        this.out += ')'
+        break
+      case 'StringLiteral':
+        this.out += '('
+        this.visit(node.right)
+        this.out += ').empty()'
+        break
+      default:
+        throw new Error(`Cannot use ! operator on ${CTypeToCode(node.right.cType)}`)
     }
   }
 }

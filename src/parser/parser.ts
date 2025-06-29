@@ -354,7 +354,9 @@ export default class Parser {
   }
 
   private getNodeCType(node: Expression): CType | undefined {
-    if (node.type === 'InfixExpression') return node.cType ?? null
+    if (node.type === 'InfixExpression' || node.type === 'PrefixExpression') {
+      return node.cType ?? null
+    }
     if (node.type === 'Identifier') {
       const ref = this.scope_manager.resolve(node.value)
       if (!ref) this.throwError(node.token, `Identifier ${node.value} is not defined`)
@@ -368,6 +370,30 @@ export default class Parser {
   }
 
   private parseExpression(precedence = 0, identifier?: Identifier): Expression {
+    if (this.cur.type === TokenType.BANG) {
+      const token = this.cur
+      this.nextToken()
+      const right = this.parseExpression(getPrecedence(token))
+
+      const rightType = this.getNodeCType(right)
+
+      if (!rightType) {
+        this.throwError(token, 'Cannot determine type of right operand in prefix expression')
+      }
+
+      if (!['BooleanLiteral', 'StringLiteral', 'IntegerLiteral'].includes(rightType)) {
+        this.throwError(token, `Cannot use ! operator on ${CTypeToHuman(rightType)}`)
+      }
+
+      return {
+        type: 'PrefixExpression',
+        operator: '!',
+        right,
+        token,
+        cType: 'BooleanLiteral'
+      }
+    }
+
     let left: Expression | null = null
 
     if (this.cur.type === TokenType.IDENTIFIER) {
