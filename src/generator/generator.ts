@@ -18,7 +18,8 @@ import type {
   BlockStatement,
   CheckStatement,
   DuringStatement,
-  PrefixExpression
+  PrefixExpression,
+  FunctionStatement
 } from '../parser/index.ts'
 import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
 import LiteralProperties from './literal-properties.ts'
@@ -32,6 +33,7 @@ export default class CodeGenerator {
   private out = ''
   private readonly parser: Parser
   private headers = new Set<string>()
+  private indentLevel = 1
 
   constructor(parser: Parser) {
     this.parser = parser
@@ -50,6 +52,10 @@ export default class CodeGenerator {
     }
   }
 
+  private indent(): void {
+    this.out += '    '.repeat(this.indentLevel)
+  }
+
   private visit(node: ASTNode): void {
     interface TypeMap {
       Program: Program
@@ -65,6 +71,7 @@ export default class CodeGenerator {
       BlockStatement: BlockStatement
       CheckStatement: CheckStatement
       DuringStatement: DuringStatement
+      FunctionStatement: FunctionStatement
       InfixExpression: InfixExpression
       CallExpression: CallExpression
       PropertyExpression: PropertyExpression
@@ -88,6 +95,7 @@ export default class CodeGenerator {
       BlockStatement: this.visitBlockStatement,
       CheckStatement: this.visitCheckStatement,
       DuringStatement: this.visitDuringStatement,
+      FunctionStatement: this.visitFunctionStatement,
       InfixExpression: this.visitInfixExpression,
       CallExpression: this.visitCallExpression,
       PropertyExpression: this.visitPropertyExpression,
@@ -115,12 +123,11 @@ export default class CodeGenerator {
   private visitProgram(node: Program): void {
     this.out += 'int main() {\n'
     for (const stmt of node.body) {
-      if (stmt.type !== 'ImportStatement') {
-        this.out += '    '
-      }
+      if (!['ImportStatement', 'FunctionStatement'].includes(stmt.type)) this.indent()
       this.visit(stmt)
     }
-    this.out += '    return 0;\n'
+    this.indent()
+    this.out += 'return 0;\n'
     this.out += '}\n'
   }
 
@@ -135,7 +142,7 @@ export default class CodeGenerator {
       case 'VoidLiteral':
         return 'void'
       case 'Identifier':
-        const identifierInfo = this.parser.scope_manager.resolve(expression.value)
+        const identifierInfo = this.parser.scopes.identifiers.resolve(expression.value)
         if (!identifierInfo) {
           throw new Error(`Identifier ${expression.value} is not defined`)
         }
@@ -249,11 +256,14 @@ export default class CodeGenerator {
   private visitCallExpression(node: CallExpression): void {
     if (node.callee.type !== 'Identifier') throw new Error('Unsupported callee type')
     const funcName = node.callee.value
-    if (!Functions.has(funcName)) {
+    const func =
+      (node.isLocal && this.parser.scopes.functions.resolve(funcName)) || Functions.get(funcName)
+    if (!func) {
       throw new Error(`Function ${funcName} is not defined`)
     }
 
-    this.out += `ecem2::${funcName}(`
+    if (!node.isLocal) this.out += `ecem2::`
+    this.out += `${funcName}(`
     for (let i = 0; i < node.args.length; i++) {
       this.visit(node.args[i])
       if (i < node.args.length - 1) {
@@ -308,18 +318,19 @@ export default class CodeGenerator {
 
   private visitBlockStatement(node: BlockStatement): void {
     this.out += '{\n'
+    this.indentLevel++
     for (const stmt of node.statements) {
       if (stmt.type !== 'ImportStatement') {
-        this.out += '    '
-        this.out += '    '
+        this.indent()
       }
       this.visit(stmt)
     }
+    this.indentLevel--
     if (
       node.statements.length > 0 &&
       node.statements[node.statements.length - 1].type !== 'ImportStatement'
     ) {
-      this.out += '    '
+      this.indent()
     }
     this.out += '}\n'
   }
@@ -368,7 +379,8 @@ export default class CodeGenerator {
     this.out += ') '
     this.visit(node.body)
     if (node.fail) {
-      this.out += `    if (!${failVarName}) `
+      this.indent()
+      this.out += `if (!${failVarName}) `
       this.visit(node.fail)
     }
   }
@@ -393,5 +405,21 @@ export default class CodeGenerator {
       default:
         throw new Error(`Cannot use ! operator on ${CTypeToCode(node.right.cType)}`)
     }
+  }
+
+  private visitFunctionStatement(node: FunctionStatement): void {
+    const content = this.out
+    // return type is void for now
+    this.out = `void ${node.name.value}(`
+    this.out += node.args.map(arg => `${CTypeToCode(arg.cType)} ${arg.value}`).join(', ')
+    this.out += ') {\n'
+
+    for (const stmt of node.body.statements) {
+      this.indent()
+      this.visit(stmt)
+    }
+
+    this.out += `}\n\n`
+    this.out += content
   }
 }

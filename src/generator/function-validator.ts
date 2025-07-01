@@ -7,6 +7,7 @@ export interface FunctionArg {
   type: CType[]
   optional?: boolean
   variadic?: boolean
+  name?: string
 }
 
 export default class FunctionValidator {
@@ -42,6 +43,7 @@ export default class FunctionValidator {
 
       if (!expectedTypes.includes(actualType)) {
         const lit = (parseTokenAsLiteral(arg.token) ?? arg.token.literal).toString()
+        const argName = expectedArg.name ?? i + 1
         parser.throwError(
           {
             column: token.column - lit.length - arg.token.literal.length + 1,
@@ -49,7 +51,7 @@ export default class FunctionValidator {
             literal: lit,
             type: token.type
           },
-          `Argument ${i + 1} of ${name} must be ${expectedTypes
+          `Argument ${argName} of ${name} must be ${expectedTypes
             .map(CTypeToHuman)
             .join(' or ')}, got ${CTypeToHuman(actualType)}`
         )

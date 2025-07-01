@@ -1,11 +1,15 @@
+import type { CType } from './ast.ts'
+
 export enum TokenType {
   ILLEGAL = 'illegal',
   END_OF_FILE = 'EOF',
   NEWLINE = 'newline',
 
   IDENTIFIER = 'identifier',
-  INT = 'integer',
+  INT = 'int',
   STRING = 'string',
+  BOOLEAN = 'boolean',
+  VOID = 'void',
 
   ASSIGN = '=',
   PLUS = '+',
@@ -44,6 +48,17 @@ export enum TokenType {
   RETURN = 'return',
   DURING = 'during',
   IMPORT = 'import'
+}
+
+export const primitiveTypes = {
+  [TokenType.INT]: 'IntegerLiteral',
+  [TokenType.STRING]: 'StringLiteral',
+  [TokenType.BOOLEAN]: 'BooleanLiteral',
+  [TokenType.VOID]: 'VoidLiteral'
+} satisfies Record<string, CType>
+
+export const isPrimitiveType = (type: string): type is keyof typeof primitiveTypes => {
+  return Object.keys(primitiveTypes).includes(type)
 }
 
 export interface Token {

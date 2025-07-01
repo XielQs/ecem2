@@ -96,6 +96,15 @@ export interface DuringStatement<C extends Expression = Expression> {
   token: Token
 }
 
+export interface FunctionStatement {
+  type: 'FunctionStatement'
+  name: Identifier
+  args: Identifier[]
+  body: BlockStatement
+  token: Token
+  returnType: CType
+}
+
 export type Statement =
   | LetStatement
   | ExpressionStatement
@@ -104,6 +113,7 @@ export type Statement =
   | BlockStatement
   | CheckStatement
   | DuringStatement
+  | FunctionStatement
 
 // ---------------- Expressions ----------------
 
@@ -119,6 +129,7 @@ export interface CallExpression<A extends Expression = Expression> extends BaseN
   type: 'CallExpression'
   callee: Identifier
   args: A[]
+  isLocal: boolean
 }
 
 export interface PropertyExpression<O extends Expression = Expression> extends BaseNode {

@@ -71,16 +71,16 @@ export function parseTokenAsLiteral(token: Token): Literal['value'] | null {
   }
 }
 
-export function CTypeToHuman(cType: CType | null): string {
+export function CTypeToHuman(cType: CType | null): TokenType | CType | 'unknown' {
   switch (cType) {
     case 'IntegerLiteral':
-      return 'integer'
+      return TokenType.INT
     case 'StringLiteral':
-      return 'string'
+      return TokenType.STRING
     case 'BooleanLiteral':
-      return 'boolean'
+      return TokenType.BOOLEAN
     case 'VoidLiteral':
-      return 'void'
+      return TokenType.VOID
     default:
       return cType ?? 'unknown'
   }

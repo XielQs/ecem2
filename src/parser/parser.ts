@@ -10,6 +10,7 @@ import {
   type DuringStatement,
   type Expression,
   type ExpressionStatement,
+  type FunctionStatement,
   type Identifier,
   type ImportStatement,
   type InfixExpression,
@@ -18,12 +19,13 @@ import {
   type Program,
   type Statement
 } from './index.ts'
+import ScopeManager, { type FunctionInfo, type IdentifierInfo } from './scope-manager.ts'
+import { isPrimitiveType, primitiveTypes, type Token, TokenType } from './token.ts'
 import LiteralProperties from '../generator/literal-properties.ts'
+import FunctionValidator from '../generator/function-validator.ts'
 import LiteralMethods from '../generator/literal-methods.ts'
-import { type Token, TokenType } from './token.ts'
 import Functions from '../generator/functions.ts'
 import { STDModule } from '../generator/index.ts'
-import ScopeManager from './scope-manager.ts'
 import { handleError } from '../common.ts'
 import Lexer from '../lexer.ts'
 
@@ -33,16 +35,24 @@ interface ImportInfo {
   used: boolean
 }
 
+interface ScopeManagers {
+  identifiers: ScopeManager<IdentifierInfo>
+  functions: ScopeManager<FunctionInfo>
+}
+
 export default class Parser {
   private readonly lexer: Lexer
-  public readonly scope_manager: ScopeManager
+  public readonly scopes: ScopeManagers
   public cur: Token
   public peek: Token
   public imports = new Map<STDModule, ImportInfo>()
 
   public constructor(lexer: Lexer) {
     this.lexer = lexer
-    this.scope_manager = new ScopeManager()
+    this.scopes = {
+      identifiers: new ScopeManager<IdentifierInfo>(),
+      functions: new ScopeManager<FunctionInfo>()
+    }
     this.cur = this.lexer.nextToken()
     this.peek = this.lexer.nextToken()
   }
@@ -62,11 +72,11 @@ export default class Parser {
     }
   }
 
-  private expectCur(type: TokenType): void {
+  private expectCur(type: TokenType, noNext = false): void {
     this.skipNewline()
     this.skipSemicolon()
     if (this.cur.type === type) {
-      this.nextToken()
+      if (!noNext) this.nextToken()
     } else {
       this.throwError(this.cur, `Unexpected token ${this.cur.type} expected ${type}`)
     }
@@ -152,8 +162,8 @@ export default class Parser {
     }
 
     const unused_identifiers = [
-      ...this.scope_manager.scopeEntiries.entries(),
-      ...this.scope_manager.unusedIdentifiers.entries()
+      ...this.scopes.identifiers.currentScope.entries(),
+      ...this.scopes.identifiers.unuseds.entries()
     ]
 
     // check for unused identifiers
@@ -213,7 +223,7 @@ export default class Parser {
           cType: 'BooleanLiteral'
         }
       case TokenType.IDENTIFIER: {
-        const identifier = this.scope_manager.resolve(token.literal)
+        const identifier = this.scopes.identifiers.resolve(token.literal)
         if (!identifier) {
           this.throwError(token, `Identifier ${token.literal} is not defined`)
         }
@@ -244,6 +254,8 @@ export default class Parser {
         return this.parseDuringStatement()
       case TokenType.IMPORT:
         return this.parseImportStatement()
+      case TokenType.FUNCTION:
+        return this.parseFunctionStatement()
       case TokenType.IDENTIFIER:
         if (this.peek.type === TokenType.ASSIGN) {
           return this.parseAssignmentStatement()
@@ -272,7 +284,7 @@ export default class Parser {
 
     this.nextToken() // let x = 69
 
-    if (this.scope_manager.hasScope(name.value)) {
+    if (this.scopes.identifiers.hasScope(name.value)) {
       this.throwError(
         {
           column: 0,
@@ -288,7 +300,7 @@ export default class Parser {
       )
     }
 
-    this.scope_manager.define(name.value, {
+    this.scopes.identifiers.define(name.value, {
       expression: value,
       referenced: false,
       declaredAt: name.token
@@ -309,7 +321,7 @@ export default class Parser {
       token: this.cur,
       cType: null
     }
-    const identifier = this.scope_manager.resolve(name.value)
+    const identifier = this.scopes.identifiers.resolve(name.value)
 
     if (!identifier) {
       this.throwError(this.cur, `Identifier ${name.value} is not declared`)
@@ -329,7 +341,7 @@ export default class Parser {
     }
     this.nextToken() // consume the value
 
-    this.scope_manager.define(name.value, {
+    this.scopes.identifiers.define(name.value, {
       expression: value,
       referenced: identifier.referenced,
       declaredAt: name.token
@@ -345,6 +357,7 @@ export default class Parser {
 
   private parseExpressionStatement(): ExpressionStatement {
     const expression = this.parseExpression(0)
+    // TODO: fix below!!!
     this.nextToken()
     this.skipSemicolon()
     this.skipNewline()
@@ -361,7 +374,7 @@ export default class Parser {
       return node.cType ?? null
     }
     if (node.type === 'Identifier') {
-      const ref = this.scope_manager.resolve(node.value)
+      const ref = this.scopes.identifiers.resolve(node.value)
       if (!ref) this.throwError(node.token, `Identifier ${node.value} is not defined`)
       return ref.expression.cType ?? 'VoidLiteral'
     }
@@ -421,8 +434,8 @@ export default class Parser {
       this.throwError(this.cur, `Unexpected token ${this.cur.type} in expression`)
     }
 
-    if (left.type === 'Identifier' && !this.scope_manager.resolve(left.value)!.referenced) {
-      this.scope_manager.resolve(left.value)!.referenced = true
+    if (left.type === 'Identifier' && !this.scopes.identifiers.resolve(left.value)!.referenced) {
+      this.scopes.identifiers.resolve(left.value)!.referenced = true
     }
 
     left = this.parsePropertyAndMethodCalls(left)
@@ -434,7 +447,7 @@ export default class Parser {
     ) {
       if (this.peek.type === TokenType.LPAREN && left.type === 'Identifier') {
         // function call
-        const identifier = this.scope_manager.resolve(this.cur.literal)
+        const identifier = this.scopes.identifiers.resolve(this.cur.literal)
         if (!identifier) {
           this.throwError(this.cur, `Identifier ${this.cur.literal} is not defined`)
         }
@@ -571,6 +584,44 @@ export default class Parser {
     return args
   }
 
+  private parseFunctionArgument(): Identifier {
+    if (!isPrimitiveType(this.cur.literal)) {
+      this.throwError(this.cur, `Expected primitive type after ( got ${this.cur.type}`)
+    }
+    const primitiveType = primitiveTypes[this.cur.literal]
+    this.nextToken() // consume primitive type
+
+    this.expectCur(TokenType.IDENTIFIER, true)
+
+    return {
+      type: 'Identifier',
+      value: this.cur.literal,
+      token: this.cur,
+      cType: primitiveType
+    }
+  }
+
+  private parseFunctionArguments(): Identifier[] {
+    this.expectPeek(TokenType.LPAREN)
+
+    const args: Identifier[] = []
+
+    if (this.peek.type !== TokenType.RPAREN) {
+      this.nextToken() // consume LPAREN
+      args.push(this.parseFunctionArgument())
+
+      while (this.peek.type === TokenType.COMMA) {
+        this.nextToken() // consume COMMA
+        this.nextToken() // consume next token
+        args.push(this.parseFunctionArgument())
+      }
+    }
+
+    this.expectPeek(TokenType.RPAREN)
+
+    return args
+  }
+
   private parsePropertyAndMethodCalls(left: Expression): Expression {
     while (this.peek.type === TokenType.DOT) {
       this.nextToken() // consume DOT
@@ -663,6 +714,34 @@ export default class Parser {
 
     const args = this.parseCallArguments()
 
+    const userFn = this.scopes.functions.resolve(cur.literal)
+
+    if (userFn) {
+      FunctionValidator.validateCall(
+        userFn.statement.name.value,
+        args,
+        userFn.statement.args.map(arg => ({
+          type: [arg.cType],
+          optional: false,
+          variadic: false,
+          name: arg.value
+        })),
+        this,
+        this.cur
+      )
+
+      userFn.referenced = true
+      callee.cType = userFn.statement.returnType
+      return {
+        type: 'CallExpression',
+        token: callee.token,
+        callee,
+        args,
+        isLocal: true,
+        cType: userFn.statement.returnType
+      }
+    }
+
     const fn = Functions.get(cur.literal)
 
     if (!fn) {
@@ -688,7 +767,8 @@ export default class Parser {
       token: callee.token,
       callee,
       args,
-      cType: fn.returnType ?? null
+      isLocal: false,
+      cType: fn.returnType
     }
   }
 
@@ -721,17 +801,28 @@ export default class Parser {
     }
   }
 
-  private parseBlockStatement(): BlockStatement {
+  private parseBlockStatement(identifiers?: Identifier[]): BlockStatement {
     const block: BlockStatement = {
       type: 'BlockStatement',
       statements: [],
       token: this.cur
     }
 
-    this.scope_manager.enterScope()
+    this.scopes.identifiers.enterScope()
+    this.scopes.functions.enterScope()
 
     this.nextToken()
     this.expectCur(TokenType.LBRACE)
+
+    if (identifiers) {
+      for (const identifier of identifiers) {
+        this.scopes.identifiers.define(identifier.value, {
+          expression: identifier,
+          referenced: false,
+          declaredAt: identifier.token
+        })
+      }
+    }
 
     while (this.cur.type !== TokenType.RBRACE && this.cur.type !== TokenType.END_OF_FILE) {
       this.skipNewline()
@@ -745,7 +836,8 @@ export default class Parser {
 
     this.expectCur(TokenType.RBRACE)
 
-    this.scope_manager.exitScope()
+    this.scopes.identifiers.exitScope()
+    this.scopes.functions.exitScope()
 
     return block
   }
@@ -824,5 +916,66 @@ export default class Parser {
       fail,
       token
     }
+  }
+
+  private parseFunctionStatement(): FunctionStatement {
+    this.expectPeek(TokenType.IDENTIFIER)
+
+    const name: Identifier = {
+      type: 'Identifier',
+      value: this.cur.literal,
+      token: this.cur,
+      cType: null
+    }
+
+    const args = this.parseFunctionArguments()
+    const hasBuiltin = Functions.has(name.value)
+    if (hasBuiltin) {
+      const imported = this.isModuleImported(Functions.get(name.value)!.module)
+      if (imported) {
+        this.throwError(
+          name.token,
+          `Function ${name.value} is a built-in function and cannot be redefined`,
+          {
+            carets: Infinity,
+            spaces: name.token.column - 1 - 'function '.length // -1 because we want to point to the identifier itself
+          }
+        )
+      }
+    }
+    if (
+      this.scopes.functions.hasScope(name.value) ||
+      this.scopes.identifiers.hasScope(name.value)
+    ) {
+      this.throwError(name.token, `Function ${name.value} has already been declared`, {
+        carets: Infinity,
+        spaces: name.token.column - 1 - 'function '.length // -1 because we want to point to the identifier itself
+      })
+    }
+
+    const functionInfo = {
+      statement: {
+        type: 'FunctionStatement',
+        name,
+        args,
+        body: {
+          type: 'BlockStatement',
+          statements: [] as Statement[],
+          token: name.token
+        }, // dummy data, will be set later
+        token: this.cur,
+        returnType: 'VoidLiteral' // todo: fix this, return type should be inferred
+      },
+      referenced: false,
+      declaredAt: this.cur
+    } satisfies FunctionInfo
+    this.scopes.functions.define(name.value, functionInfo)
+
+    const body = this.parseBlockStatement(args)
+
+    functionInfo.statement.body = body
+    name.cType = functionInfo.statement.returnType
+
+    return functionInfo.statement
   }
 }
