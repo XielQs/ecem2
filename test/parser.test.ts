@@ -25,7 +25,7 @@ export const enum TESTModule {
 STDModule.TEST = TESTModule.TEST
 
 describe('Parser', () => {
-  it('parses single let statement with integer', () => {
+  it('parses single let statement with int', () => {
     const code = 'let x = 42'
     const parser = new Parser(new Lexer(code, 'test'))
     const program = parser.parseProgram()
@@ -138,10 +138,10 @@ describe('Parser', () => {
     expect(stmt.value.right.value).toBe(' Again??')
   })
 
-  it('throws error on string concatenation with integer', () => {
+  it('throws error on string concatenation with int', () => {
     const code = 'let result = "Hello" + 42'
     const parser = new Parser(new Lexer(code, 'test'))
-    expectPanic(() => parser.parseProgram(), 'Cannot operate on string and integer')
+    expectPanic(() => parser.parseProgram(), 'Cannot operate on string and int')
   })
 
   it('parses function call with no arguments', () => {
@@ -321,7 +321,7 @@ describe('Parser', () => {
     const parser = new Parser(new Lexer(code, 'test'))
     expectPanic(
       () => parser.parseProgram(),
-      'Expected condition expression to be of type boolean, got integer'
+      'Expected condition expression to be of type boolean, got int'
     )
   })
 
@@ -370,7 +370,7 @@ describe('Parser', () => {
     const parser = new Parser(new Lexer(code, 'test'))
     expectPanic(
       () => parser.parseProgram(),
-      'Expected condition expression to be of type boolean, got integer'
+      'Expected condition expression to be of type boolean, got int'
     )
   })
 })

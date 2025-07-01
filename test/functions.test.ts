@@ -28,7 +28,7 @@ describe('Functions', () => {
     })
     const code = 'import <test>\nlet b = negate(123)'
     const parser = new Parser(new Lexer(code, 'test'))
-    expectPanic(() => parser.parseProgram(), 'Argument 1 of negate must be boolean, got integer')
+    expectPanic(() => parser.parseProgram(), 'Argument 1 of negate must be boolean, got int')
   })
 
   it('throws error on function call with wrong number of arguments', () => {
