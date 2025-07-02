@@ -357,10 +357,6 @@ export default class Parser {
 
   private parseExpressionStatement(): ExpressionStatement {
     const expression = this.parseExpression(0)
-    // TODO: fix below!!!
-    this.nextToken()
-    this.skipSemicolon()
-    this.skipNewline()
     return {
       type: 'ExpressionStatement',
       expression,
@@ -830,6 +826,8 @@ export default class Parser {
       if (stmt) {
         block.statements.push(stmt)
       }
+      this.cur = this.cur // ts is being ts
+      if (this.cur.type !== TokenType.RBRACE) this.nextToken() // move to next token if not at the end of block
       this.skipSemicolon()
       this.skipNewline()
     }
