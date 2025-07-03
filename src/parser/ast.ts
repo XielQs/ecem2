@@ -62,10 +62,10 @@ export interface ExpressionStatement extends BaseNode {
   expression: ASTNode
 }
 
-export interface AssignmentStatement {
+export interface AssignmentStatement<V extends Expression = Expression> {
   type: 'AssignmentStatement'
   name: Identifier
-  value: Expression
+  value: V
 }
 
 export interface ImportStatement {
@@ -105,9 +105,9 @@ export interface FunctionStatement {
   returnType: CType
 }
 
-export interface ReturnStatement {
+export interface ReturnStatement<V extends Expression = Expression> {
   type: 'ReturnStatement'
-  value: Expression
+  value: V
   token: Token
 }
 
