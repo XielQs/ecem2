@@ -17,6 +17,7 @@ import {
   type LetStatement,
   type Literal,
   type Program,
+  type ReturnStatement,
   type Statement
 } from './index.ts'
 import ScopeManager, { type FunctionInfo, type IdentifierInfo } from './scope-manager.ts'
@@ -256,6 +257,8 @@ export default class Parser {
         return this.parseImportStatement()
       case TokenType.FUNCTION:
         return this.parseFunctionStatement()
+      case TokenType.RETURN:
+        return this.parseReturnStatement()
       case TokenType.IDENTIFIER:
         if (this.peek.type === TokenType.ASSIGN) {
           return this.parseAssignmentStatement()
@@ -281,6 +284,13 @@ export default class Parser {
     this.nextToken()
 
     const value = this.parseExpression(0, name)
+
+    if (value.cType === 'VoidLiteral') {
+      this.throwError(value.token, `Cannot assign void literal to identifier ${name.value}`, {
+        carets: Infinity,
+        spaces: name.token.column - 1 - 'let '.length // -1 because we want to point to the identifier itself
+      })
+    }
 
     this.nextToken() // let x = 69
 
@@ -822,6 +832,10 @@ export default class Parser {
 
     while (this.cur.type !== TokenType.RBRACE && this.cur.type !== TokenType.END_OF_FILE) {
       this.skipNewline()
+      this.cur = this.cur // ts is being ts
+      if (this.cur.type === TokenType.RBRACE) {
+        break // end of block
+      }
       const stmt = this.parseStatement()
       if (stmt) {
         block.statements.push(stmt)
@@ -916,6 +930,32 @@ export default class Parser {
     }
   }
 
+  private parseReturnStatement(): ReturnStatement {
+    const token = this.cur
+    this.nextToken() // consume RETURN
+    if (this.cur.type === TokenType.NEWLINE || this.cur.type === TokenType.SEMICOLON) {
+      // return without value
+      return {
+        type: 'ReturnStatement',
+        value: {
+          type: 'VoidLiteral',
+          value: undefined,
+          token,
+          cType: 'VoidLiteral'
+        },
+        token
+      }
+    }
+    const value = this.parseExpression(0)
+    this.nextToken() // consume the value
+
+    return {
+      type: 'ReturnStatement',
+      value,
+      token
+    }
+  }
+
   private parseFunctionStatement(): FunctionStatement {
     this.expectPeek(TokenType.IDENTIFIER)
 
@@ -951,6 +991,25 @@ export default class Parser {
       })
     }
 
+    const errMsg = 'Expected -> after function arguments, got %s'
+
+    if (this.peek.type !== TokenType.MINUS) {
+      this.throwError(this.peek, errMsg.replace('%s', this.peek.type))
+    }
+    this.nextToken() // consume RPAREN
+    this.peek = this.peek
+    if (this.peek.type !== TokenType.GT) {
+      this.throwError(this.peek, errMsg.replace('%s', this.peek.type))
+    }
+    this.nextToken() // consume -
+    this.nextToken() // consume the -> token (>)
+
+    const returnType = this.cur.literal
+    if (!isPrimitiveType(returnType)) {
+      this.throwError(this.cur, `Expected return type after -> got ${this.cur.type}`)
+    }
+    name.cType = primitiveTypes[returnType]
+
     const functionInfo = {
       statement: {
         type: 'FunctionStatement',
@@ -962,7 +1021,7 @@ export default class Parser {
           token: name.token
         }, // dummy data, will be set later
         token: this.cur,
-        returnType: 'VoidLiteral' // todo: fix this, return type should be inferred
+        returnType: name.cType
       },
       referenced: false,
       declaredAt: this.cur
@@ -971,8 +1030,24 @@ export default class Parser {
 
     const body = this.parseBlockStatement(args)
 
+    const returnStatements = body.statements.filter(stmt => stmt.type === 'ReturnStatement')
+    const wrongReturnType = returnStatements.find(
+      stmt => stmt.value.cType !== primitiveTypes[returnType]
+    )
+
+    if (wrongReturnType) {
+      this.throwError(
+        wrongReturnType.value.token,
+        `Return type ${CTypeToHuman(
+          wrongReturnType.value.cType
+        )} does not match function return type ${returnType}`,
+        {
+          carets: Infinity,
+          spaces: wrongReturnType.token.column - 1
+        }
+      )
+    }
     functionInfo.statement.body = body
-    name.cType = functionInfo.statement.returnType
 
     return functionInfo.statement
   }

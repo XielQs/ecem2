@@ -19,7 +19,8 @@ import type {
   CheckStatement,
   DuringStatement,
   PrefixExpression,
-  FunctionStatement
+  FunctionStatement,
+  ReturnStatement
 } from '../parser/index.ts'
 import { parseBoolean, parseIdentifier, parseInteger, parseString } from '../parser/index.ts'
 import LiteralProperties from './literal-properties.ts'
@@ -72,6 +73,7 @@ export default class CodeGenerator {
       CheckStatement: CheckStatement
       DuringStatement: DuringStatement
       FunctionStatement: FunctionStatement
+      ReturnStatement: ReturnStatement
       InfixExpression: InfixExpression
       CallExpression: CallExpression
       PropertyExpression: PropertyExpression
@@ -96,6 +98,7 @@ export default class CodeGenerator {
       CheckStatement: this.visitCheckStatement,
       DuringStatement: this.visitDuringStatement,
       FunctionStatement: this.visitFunctionStatement,
+      ReturnStatement: this.visitReturnStatement,
       InfixExpression: this.visitInfixExpression,
       CallExpression: this.visitCallExpression,
       PropertyExpression: this.visitPropertyExpression,
@@ -150,7 +153,10 @@ export default class CodeGenerator {
       case 'InfixExpression':
         return CTypeToCode(expression.cType)
       case 'CallExpression': {
-        const func = Functions.get(expression.callee.value)
+        const func =
+          (expression.isLocal &&
+            this.parser.scopes.functions.resolve(expression.callee.value)?.statement) ||
+          Functions.get(expression.callee.value)
         if (!func) {
           throw new Error(`Function ${expression.callee.value} is not defined`)
         }
@@ -409,8 +415,7 @@ export default class CodeGenerator {
 
   private visitFunctionStatement(node: FunctionStatement): void {
     const content = this.out
-    // return type is void for now
-    this.out = `void ${node.name.value}(`
+    this.out = `${CTypeToCode(node.name.cType)} ${node.name.value}(`
     this.out += node.args.map(arg => `${CTypeToCode(arg.cType)} ${arg.value}`).join(', ')
     this.out += ') {\n'
 
@@ -421,5 +426,13 @@ export default class CodeGenerator {
 
     this.out += `}\n\n`
     this.out += content
+  }
+
+  private visitReturnStatement(node: ReturnStatement): void {
+    this.out += 'return '
+    if (node.value.type === 'VoidLiteral') {
+      this.out += 'void()'
+    } else this.visit(node.value)
+    this.insertSemi()
   }
 }

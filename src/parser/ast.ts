@@ -105,6 +105,12 @@ export interface FunctionStatement {
   returnType: CType
 }
 
+export interface ReturnStatement {
+  type: 'ReturnStatement'
+  value: Expression
+  token: Token
+}
+
 export type Statement =
   | LetStatement
   | ExpressionStatement
@@ -114,6 +120,7 @@ export type Statement =
   | CheckStatement
   | DuringStatement
   | FunctionStatement
+  | ReturnStatement
 
 // ---------------- Expressions ----------------
 
