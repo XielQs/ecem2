@@ -1,5 +1,6 @@
 export enum STDModule {
   IO = 'io',
   STRING = 'string',
-  MATH = 'math'
+  MATH = 'math',
+  RANDOM = 'random'
 }

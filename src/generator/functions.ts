@@ -114,3 +114,19 @@ Functions.register({
   args: [{ type: ['IntegerLiteral'], variadic: true }],
   module: STDModule.MATH
 })
+
+// === RANDOM ===
+
+Functions.register({
+  name: 'randomInt',
+  returnType: 'IntegerLiteral',
+  args: [{ type: ['IntegerLiteral'] }, { type: ['IntegerLiteral'] }],
+  module: STDModule.RANDOM
+})
+
+Functions.register({
+  name: 'randomString',
+  returnType: 'StringLiteral',
+  args: [{ type: ['IntegerLiteral'] }],
+  module: STDModule.RANDOM
+})
