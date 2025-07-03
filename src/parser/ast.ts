@@ -85,6 +85,7 @@ export interface CheckStatement<C extends Expression = Expression> {
   condition: C
   body: BlockStatement
   fail: BlockStatement | null
+  failCheck: CheckStatement<C> | null
   token: Token
 }
 

@@ -877,10 +877,16 @@ export default class Parser {
     const body = this.parseBlockStatement()
 
     let fail: BlockStatement | null = null
+    let failCheck: CheckStatement | null = null
 
     this.skipNewline()
     if (this.cur.type === TokenType.FAIL) {
-      fail = this.parseBlockStatement()
+      if (this.peek.type === TokenType.CHECK) {
+        this.nextToken() // consume FAIL
+        failCheck = this.parseCheckStatement()
+      } else {
+        fail = this.parseBlockStatement()
+      }
     }
 
     return {
@@ -888,6 +894,7 @@ export default class Parser {
       condition,
       body,
       fail,
+      failCheck,
       token
     }
   }

@@ -347,11 +347,11 @@ export default class CodeGenerator {
     this.out += ') '
     this.visit(node.body)
 
-    if (node.fail) {
+    if (node.failCheck ?? node.fail) {
       // remove newline before else
       this.out = this.out.trimEnd()
       this.out += ' else '
-      this.visit(node.fail)
+      this.visit((node.failCheck ?? node.fail)!)
     }
   }
 
