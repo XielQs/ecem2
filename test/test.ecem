@@ -1,10 +1,9 @@
-import <math>
 import <io>
 
-let x = 16
+ft add(int num1, int num2) -> void {
+  print(num1 + num2)
+  return
+}
 
-print("The square root of", x, "is", sqrt(x))
-print("The power of", x, "to 2 is", pow(x, 2))
-print("The length of the string 'Hello, world!' is", "Hello, world!".len)
-
-print("You entered in upper case:", input("Enter a string: ").upper())
+add(1, 5)
+add(2, 2)

@@ -4,7 +4,7 @@ import { expectPanic } from './utils.ts'
 import Lexer from '../src/lexer.ts'
 
 describe('Stdlib', () => {
-  it('parses to_string function call with integer', () => {
+  it('parses to_string function call with int', () => {
     const code = 'import <string>\nlet str = to_string(123)'
     const parser = new Parser(new Lexer(code, 'test'))
     const program = parser.parseProgram()

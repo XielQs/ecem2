@@ -54,4 +54,16 @@ describe('Functions', () => {
     const parser = new Parser(new Lexer(code, 'test'))
     expectPanic(() => parser.parseProgram(), 'concat expects at least 2 argument(s), got 1')
   })
+
+  it('throws error on function call with wrong argument type in variadic function', () => {
+    Functions.register({
+      name: 'sum',
+      args: [{ type: ['IntegerLiteral'] }, { type: ['IntegerLiteral'], variadic: true }],
+      returnType: 'IntegerLiteral',
+      module: TESTModule.TEST as unknown as STDModule
+    })
+    const code = 'import <test>\nlet result = sum(1, 2, "three")'
+    const parser = new Parser(new Lexer(code, 'test'))
+    expectPanic(() => parser.parseProgram(), 'Argument 3 of sum must be int, got string')
+  })
 })

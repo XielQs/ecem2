@@ -4,15 +4,20 @@ import Parser, {
   type CheckStatement,
   type DuringStatement,
   type Expression,
+  type FunctionStatement,
+  type Identifier,
   type InfixExpression,
   type IntegerLiteral,
   type LetStatement,
   type MethodCallExpression,
+  type PropertyExpression,
+  type ReturnStatement,
   type StringLiteral
 } from '../src/parser/index.ts'
 import LiteralMethods from '../src/generator/literal-methods.ts'
 import { STDModule } from '../src/generator/modules.ts'
 import Functions from '../src/generator/functions.ts'
+import { TokenType } from '../src/parser/token.ts'
 import { describe, it, expect } from 'bun:test'
 import { expectPanic } from './utils.ts'
 import Lexer from '../src/lexer.ts'
@@ -372,5 +377,64 @@ describe('Parser', () => {
       () => parser.parseProgram(),
       'Expected condition expression to be of type boolean, got int'
     )
+  })
+
+  it('parses nested during statements', () => {
+    const code = `
+      during true {
+        during false {
+          let x = 1
+        }
+      }
+    `
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const outerStmt = program.body[0] as DuringStatement<BooleanLiteral>
+    const innerStmt = outerStmt.body.statements[0] as DuringStatement<BooleanLiteral>
+    expect(outerStmt.type).toBe('DuringStatement')
+    expect(innerStmt.type).toBe('DuringStatement')
+    expect(innerStmt.condition.value).toBe(false)
+    expect(innerStmt.body.statements.length).toBe(1)
+  })
+
+  it('parses method call with chained property access', () => {
+    const code = 'let result = "hello".upper().len'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    const stmt = program.body[0] as LetStatement<PropertyExpression<MethodCallExpression>>
+    expect(stmt.value.type).toBe('PropertyExpression')
+    expect(stmt.value.property.value).toBe('len')
+    expect(stmt.value.object.type).toBe('MethodCallExpression')
+    expect(stmt.value.object.callee.property.value).toBe('upper')
+  })
+
+  it('throws error on invalid property access', () => {
+    const code = 'let invalid = "hello".unknownProperty'
+    const parser = new Parser(new Lexer(code, 'test'))
+    expectPanic(() => parser.parseProgram(), 'string has no property called unknownProperty')
+  })
+
+  it('parses function with return type', () => {
+    const code = 'ft add(int a, int b) -> int { return a + b }'
+    const parser = new Parser(new Lexer(code, 'test'))
+    const program = parser.parseProgram()
+    expect(program.body.length).toBe(1)
+    const func = program.body[0] as FunctionStatement
+    expect(func.name.value).toBe('add')
+    expect(func.returnType).toBe('IntegerLiteral')
+    expect(func.args.length).toBe(2)
+    expect(func.args[0].cType).toBe('IntegerLiteral')
+    expect(func.args[0].value).toBe('a')
+    expect(func.args[1].cType).toBe('IntegerLiteral')
+    expect(func.args[1].value).toBe('b')
+    expect(func.body.type).toBe('BlockStatement')
+    expect(func.body.statements.length).toBe(1)
+    const returnStmt = func.body.statements[0] as ReturnStatement<
+      InfixExpression<Identifier, Identifier>
+    >
+    expect(returnStmt.value.type).toBe('InfixExpression')
+    expect(returnStmt.value.left.value).toBe('a')
+    expect(returnStmt.value.right.value).toBe('b')
+    expect(returnStmt.value.token.type).toBe(TokenType.PLUS)
   })
 })
