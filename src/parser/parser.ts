@@ -158,7 +158,14 @@ export default class Parser {
         body.push(stmt)
       }
 
-      this.nextToken()
+      // TODO: pls fix this in a better way :sob:
+      if (
+        stmt?.type !== 'CheckStatement' &&
+        stmt?.type !== 'DuringStatement' &&
+        stmt?.type !== 'FunctionStatement'
+      ) {
+        this.nextToken()
+      }
       this.skipSemicolon()
     }
 
